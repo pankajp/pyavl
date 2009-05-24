@@ -1,0 +1,44 @@
+
+General
+-------
+AVL and its plot library should compile on any Unix system 
+with normal Fortran-77, C, and X-Windows support. 
+
+
+Build sequence
+--------------
+
+1) Build Xplot11 library in  ./plotlib  ...
+
+ % cd plotlib
+ % edit Makefile  (set compiler flags for your system)
+ % make           (creates libPlt.a)
+
+
+2) Build Eispack library in ./eispack  ...
+
+ % cd eispack
+ % edit Makefile  (set compiler flags for your system)
+ % make           (creates eispack.a)
+
+
+3) Build AVL in ./bin  ...
+
+ % cd bin
+ % edit Makefile  (set compiler flags for your system)
+ % make avl
+
+
+The executable will appear in the bin/ directory.
+
+
+Documentation
+-------------
+User Guide is in the  avl_doc.txt  file.  If impatient, you can just
+run AVL in the runs/ directory, which contains a few input files:
+
+ % cd runs
+ % ../bin/avl vanilla
+
+The files  session1.txt, session2.txt  contain keyboard input examples.
+
