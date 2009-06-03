@@ -1,7 +1,7 @@
 
 #FC = f77
 FC = f95
-FLG = -O
+FLG = -O -fPIC
 EISLIB = eispack.a
 AR = ar r
 RAN = ranlib

@@ -58,8 +58,8 @@ CC  = gcc
 # Uncomment to make double-precision version
 #DP = -r8
 
-FFLAGS  = -O3 $(DP)
-CFLAGS  = -O3 $(DEFINE)
+FFLAGS  = -fPIC -O3 $(DP)
+CFLAGS  = -fPIC -O3 $(DEFINE)
 AR = ar r
 RANLIB = ranlib 
 

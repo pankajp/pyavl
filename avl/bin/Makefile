@@ -24,7 +24,7 @@ EIGOBJ = ../eispack/eispack.a
 ###================================================
 ###  Default compilers and flags
 FC = f95
-FFLAGS = -O
+FFLAGS = -O -fPIC
 PLTLIB = -lX11
 FTNLIB =
 
@@ -64,17 +64,17 @@ SECOND = second_g77.f
 #FFLAGS = -O3
 ##--------------------------
 ### Intel Fortran Compiler 8.x
-FC = f95
-FFLAGS = -O 
+#FC = f95
+#FFLAGS = -O 
 PLTLIB = -L/usr/X11R6/lib -lX11
 #SECOND = second_ifc.f
 #FTNLIB = -Vaxlib
 ##--------------------------
 ### double-precision option (also need double precision Eispack and libPlt)
 #FFLAGS = -O -r8
-FFLAGS = -O
+#FFLAGS = -O
 #PLTOBJ = ../plotlib/libPltDP.a 
-PLTOBJ = ../plotlib/libPlt.a 
+#PLTOBJ = ../plotlib/libPlt.a 
 
 
 
