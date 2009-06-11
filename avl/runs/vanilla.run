@@ -2,32 +2,32 @@
  ---------------------------------------------
  Run case  1:  -unnamed-                               
 
- alpha        ->  CL          =   1.16647    
- beta         ->  beta        =   0.00000    
+ alpha        ->  CL          =   1.00000    
+ beta         ->  beta        =   5.00000    
  pb/2V        ->  pb/2V       =   0.00000    
- qc/2V        ->  qc/2V       =   0.00000    
+ qc/2V        ->  qc/2V       =  0.405000E-02
  rb/2V        ->  rb/2V       =   0.00000    
  flap         ->  flap        =   0.00000    
  aileron      ->  Cl roll mom =   0.00000    
  elevator     ->  Cm pitchmom =   0.00000    
  rudder       ->  Cn yaw  mom =   0.00000    
 
- alpha     =   8.24061     deg                             
- beta      =   0.00000     deg                             
- pb/2V     = -0.440870E-16                                 
- qc/2V     =   0.00000                                     
- rb/2V     = -0.399571E-15                                 
- CL        =   1.16647                                     
+ alpha     =   6.36115     deg                             
+ beta      =   5.00000     deg                             
+ pb/2V     =  0.567953E-14                                 
+ qc/2V     =  0.405000E-02                                 
+ rb/2V     =  0.525465E-15                                 
+ CL        =   1.00000                                     
  CDo       =   0.00000                                     
- bank      =   0.00000     deg                             
- elevation =   0.00000     deg                             
+ bank      =   2.00000     deg                             
+ elevation =   3.00000     deg                             
  heading   =   0.00000     deg                             
  Mach      =   0.00000                                     
  velocity  =   30.8633     Lunit/Tunit                     
  density   =  0.200000     Munit/Lunit^3                   
  grav.acc. =   10.0000     Lunit/Tunit^2                   
- turn_rad. =   0.00000     Lunit                           
- load_fac. =   1.00000                                     
+ turn_rad. =   111.111     Lunit                           
+ load_fac. =  0.857289                                     
  X_cg      =  0.650000     Lunit                           
  Y_cg      =   0.00000     Lunit                           
  Z_cg      =   0.00000     Lunit                           
@@ -46,164 +46,32 @@
  ---------------------------------------------
  Run case  2:  -unnamed-                               
 
- alpha        ->  CL          =   1.16647    
+ alpha        ->  CL          =   1.00000    
  beta         ->  beta        =   5.00000    
  pb/2V        ->  pb/2V       =   0.00000    
- qc/2V        ->  qc/2V       =   0.00000    
+ qc/2V        ->  qc/2V       =  0.405000E-02
  rb/2V        ->  rb/2V       =   0.00000    
  flap         ->  flap        =   0.00000    
  aileron      ->  Cl roll mom =   0.00000    
  elevator     ->  Cm pitchmom =   0.00000    
  rudder       ->  Cn yaw  mom =   0.00000    
 
- alpha     =   8.30849     deg                             
+ alpha     =   6.36115     deg                             
  beta      =   5.00000     deg                             
- pb/2V     =  0.102044E-27                                 
- qc/2V     =   0.00000                                     
- rb/2V     = -0.921949E-26                                 
- CL        =   1.16647                                     
+ pb/2V     =  0.567953E-14                                 
+ qc/2V     =  0.405000E-02                                 
+ rb/2V     =  0.525465E-15                                 
+ CL        =   1.00000                                     
  CDo       =   0.00000                                     
- bank      =   0.00000     deg                             
- elevation =   0.00000     deg                             
+ bank      =   2.00000     deg                             
+ elevation =   3.00000     deg                             
  heading   =   0.00000     deg                             
  Mach      =   0.00000                                     
  velocity  =   30.8633     Lunit/Tunit                     
  density   =  0.200000     Munit/Lunit^3                   
  grav.acc. =   10.0000     Lunit/Tunit^2                   
- turn_rad. =   0.00000     Lunit                           
- load_fac. =   1.00000                                     
- X_cg      =  0.650000     Lunit                           
- Y_cg      =   0.00000     Lunit                           
- Z_cg      =   0.00000     Lunit                           
- mass      =   100.000     Munit                           
- Ixx       =   400.000     Munit-Lunit^2                   
- Iyy       =   200.000     Munit-Lunit^2                   
- Izz       =   600.000     Munit-Lunit^2                   
- Ixy       =   0.00000     Munit-Lunit^2                   
- Iyz       =   0.00000     Munit-Lunit^2                   
- Izx       =   0.00000     Munit-Lunit^2                   
- visc CL_a =   0.00000                                     
- visc CL_u =   0.00000                                     
- visc CM_a =   0.00000                                     
- visc CM_u =   0.00000                                     
-
- ---------------------------------------------
- Run case  3:  -unnamed-                               
-
- alpha        ->  CL          =   1.16647    
- beta         ->  beta        =   10.0000    
- pb/2V        ->  pb/2V       =   0.00000    
- qc/2V        ->  qc/2V       =   0.00000    
- rb/2V        ->  rb/2V       =   0.00000    
- flap         ->  flap        =   0.00000    
- aileron      ->  Cl roll mom =   0.00000    
- elevator     ->  Cm pitchmom =   0.00000    
- rudder       ->  Cn yaw  mom =   0.00000    
-
- alpha     =   8.51450     deg                             
- beta      =   10.0000     deg                             
- pb/2V     =  0.775113E-25                                 
- qc/2V     =   0.00000                                     
- rb/2V     = -0.190600E-25                                 
- CL        =   1.16647                                     
- CDo       =   0.00000                                     
- bank      =   0.00000     deg                             
- elevation =   0.00000     deg                             
- heading   =   0.00000     deg                             
- Mach      =   0.00000                                     
- velocity  =   30.8633     Lunit/Tunit                     
- density   =  0.200000     Munit/Lunit^3                   
- grav.acc. =   10.0000     Lunit/Tunit^2                   
- turn_rad. =   0.00000     Lunit                           
- load_fac. =   1.00000                                     
- X_cg      =  0.650000     Lunit                           
- Y_cg      =   0.00000     Lunit                           
- Z_cg      =   0.00000     Lunit                           
- mass      =   100.000     Munit                           
- Ixx       =   400.000     Munit-Lunit^2                   
- Iyy       =   200.000     Munit-Lunit^2                   
- Izz       =   600.000     Munit-Lunit^2                   
- Ixy       =   0.00000     Munit-Lunit^2                   
- Iyz       =   0.00000     Munit-Lunit^2                   
- Izx       =   0.00000     Munit-Lunit^2                   
- visc CL_a =   0.00000                                     
- visc CL_u =   0.00000                                     
- visc CM_a =   0.00000                                     
- visc CM_u =   0.00000                                     
-
- ---------------------------------------------
- Run case  4:  -unnamed-                               
-
- alpha        ->  CL          =   1.16647    
- beta         ->  beta        =   15.0000    
- pb/2V        ->  pb/2V       =   0.00000    
- qc/2V        ->  qc/2V       =   0.00000    
- rb/2V        ->  rb/2V       =   0.00000    
- flap         ->  flap        =   0.00000    
- aileron      ->  Cl roll mom =   0.00000    
- elevator     ->  Cm pitchmom =   0.00000    
- rudder       ->  Cn yaw  mom =   0.00000    
-
- alpha     =   8.86328     deg                             
- beta      =   15.0000     deg                             
- pb/2V     = -0.731872E-24                                 
- qc/2V     =   0.00000                                     
- rb/2V     = -0.271384E-24                                 
- CL        =   1.16647                                     
- CDo       =   0.00000                                     
- bank      =   0.00000     deg                             
- elevation =   0.00000     deg                             
- heading   =   0.00000     deg                             
- Mach      =   0.00000                                     
- velocity  =   30.8633     Lunit/Tunit                     
- density   =  0.200000     Munit/Lunit^3                   
- grav.acc. =   10.0000     Lunit/Tunit^2                   
- turn_rad. =   0.00000     Lunit                           
- load_fac. =   1.00000                                     
- X_cg      =  0.650000     Lunit                           
- Y_cg      =   0.00000     Lunit                           
- Z_cg      =   0.00000     Lunit                           
- mass      =   100.000     Munit                           
- Ixx       =   400.000     Munit-Lunit^2                   
- Iyy       =   200.000     Munit-Lunit^2                   
- Izz       =   600.000     Munit-Lunit^2                   
- Ixy       =   0.00000     Munit-Lunit^2                   
- Iyz       =   0.00000     Munit-Lunit^2                   
- Izx       =   0.00000     Munit-Lunit^2                   
- visc CL_a =   0.00000                                     
- visc CL_u =   0.00000                                     
- visc CM_a =   0.00000                                     
- visc CM_u =   0.00000                                     
-
- ---------------------------------------------
- Run case  5:  -unnamed-                               
-
- alpha        ->  CL          =   1.16647    
- beta         ->  beta        =   20.0000    
- pb/2V        ->  pb/2V       =   0.00000    
- qc/2V        ->  qc/2V       =   0.00000    
- rb/2V        ->  rb/2V       =   0.00000    
- flap         ->  flap        =   0.00000    
- aileron      ->  Cl roll mom =   0.00000    
- elevator     ->  Cm pitchmom =   0.00000    
- rudder       ->  Cn yaw  mom =   0.00000    
-
- alpha     =   9.36338     deg                             
- beta      =   20.0000     deg                             
- pb/2V     = -0.172545E-23                                 
- qc/2V     =   0.00000                                     
- rb/2V     = -0.132873E-24                                 
- CL        =   1.16647                                     
- CDo       =   0.00000                                     
- bank      =   0.00000     deg                             
- elevation =   0.00000     deg                             
- heading   =   0.00000     deg                             
- Mach      =   0.00000                                     
- velocity  =   30.8633     Lunit/Tunit                     
- density   =  0.200000     Munit/Lunit^3                   
- grav.acc. =   10.0000     Lunit/Tunit^2                   
- turn_rad. =   0.00000     Lunit                           
- load_fac. =   1.00000                                     
+ turn_rad. =   111.111     Lunit                           
+ load_fac. =  0.857289                                     
  X_cg      =  0.650000     Lunit                           
  Y_cg      =   0.00000     Lunit                           
  Z_cg      =   0.00000     Lunit                           
