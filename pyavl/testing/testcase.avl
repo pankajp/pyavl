@@ -10,6 +10,13 @@ testCase
 
 ######################################################################
 # SURFACES
+SURFACE
+surface 1
+# Nchord	Cspace	[ Nspan	Sspace ]
+20	1.000000
+SCALE
+2.0
+
 # END SURFACES
 
 # BODIES
