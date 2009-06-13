@@ -9,7 +9,10 @@ from geometry import Geometry
 def filter_lines(lines):
     ret = []
     for line in lines:
-        index = line.find('#')
+        index1 = line.find('#')
+        index2 = line.find('!')
+        index = min(index1, index2)
+        if index < 0: index = max(index1, index2)
         if index >= 0:
             line = line[:index]
         line = line.strip()
@@ -43,9 +46,9 @@ class Case(object):
         '''
         file.write(self.casename + '\n')
         file.write('#Mach no\n%f\n' % self.mach_no)
-        file.write('#iYsym\tiZsym\tZsym\n%d\t%d\t%f\n' % self.symmetry)
+        file.write('#iYsym\tiZsym\tZsym\n%d\t%d\t%f\n' % tuple(self.symmetry))
         file.write('#Sref\tCref\tBref\n%f\t%f\t%f\n' % (self.ref_area, self.ref_chord, self.ref_span))
-        file.write('#Xref\tYref\tZref\n%f\t%f\t%f\n' % self.ref_cg)
+        file.write('#Xref\tYref\tZref\n%f\t%f\t%f\n' % tuple(self.ref_cg))
         if self.CD_p is not None:
             file.write('#CD_p profile drag coefficient\n%f\n' % self.CD_p)
         file.write('\n')
@@ -74,5 +77,6 @@ class Case(object):
             lineno = 6
         except ValueError:
             CD_p = None
-        geometry = Geometry.geometry_from_lines(lines, lineno)
+        geometry = Geometry.create_from_lines(lines, lineno)
         case = Case(casename, mach_no, symmetry, ref_area, ref_chord, ref_span, ref_cg, CD_p, geometry)
+        return case
