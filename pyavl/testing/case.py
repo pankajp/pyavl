@@ -4,8 +4,8 @@ Created on Jun 10, 2009
 @author: pankaj
 '''
 import unittest
-from pyavl.case2 import Case, filter_lines
-from pyavl.geometry2 import Geometry, Surface
+from pyavl.case import Case, filter_lines
+from pyavl.geometry import Geometry, Surface
 
 class Test(unittest.TestCase):
 
@@ -13,7 +13,7 @@ class Test(unittest.TestCase):
         geometry = Geometry()
         surface1 = Surface(name='surface 1', cvortices=[20,1.0], scale=[1.0,1.0,1.0])
         geometry.surfaces[surface1.name] = surface1
-        self.case = Case(casename='testCase', mach_no=0.0, symmetry=(0,0,0.0), ref_area=9.0, ref_chord=0.9, ref_span=10.0, ref_cg=(0.5,0.0,0.0), geometry=geometry)
+        self.case = Case(casename='testCase', mach_no=0.0, symmetry=[0,0,0.0], ref_area=9.0, ref_chord=0.9, ref_span=10.0, ref_cg=[0.5,0.0,0.0], geometry=geometry)
         self.test_avl_case = 'ow'
 
     def tearDown(self):
@@ -42,6 +42,10 @@ class Test(unittest.TestCase):
         file = open('filter_test.avl','w')
         file.write('\n'.join(lines))
         file.close()
+    
+    def test_ui(self):
+        self.case.configure_traits()
+        self.case.geometry.configure_traits()
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.test_file_write']

@@ -4,7 +4,8 @@ Created on Jun 8, 2009
 @author: pankaj
 '''
 
-from geometry2 import Geometry
+from enthought.traits.api import HasTraits, List, Str, Float, Range, Int, Dict, File, Trait, Instance, Enum, Array
+from geometry import Geometry, Vec, Floatn
 
 def filter_lines(lines):
     ret = []
@@ -20,25 +21,19 @@ def filter_lines(lines):
             ret.append(line)
     return ret
 
-
-class Case(object):
+class Case(HasTraits):
     '''
     A class representing an avl input file
     '''
-    
-    def __init__(self, casename, mach_no, symmetry, ref_area, ref_chord, ref_span, ref_cg, CD_p=None, geometry=None):
-        '''
-        Constructor
-        '''
-        self.casename = casename
-        self.mach_no = mach_no
-        self.symmetry = symmetry
-        self.ref_area = ref_area
-        self.ref_chord = ref_chord
-        self.ref_span = ref_span
-        self.ref_cg = ref_cg
-        self.CD_p = CD_p
-        self.geometry = geometry
+    casename = Str()
+    mach_no = Float()
+    symmetry = List(minlen=3, maxlen=3)
+    ref_area = Float()
+    ref_chord = Float()
+    ref_span = Float()
+    ref_cg = Vec
+    CD_p = Floatn
+    geometry = Instance(Geometry)
     
     def write_input_file(self, file):
         '''
@@ -78,5 +73,5 @@ class Case(object):
         except ValueError:
             CD_p = None
         geometry = Geometry.create_from_lines(lines, lineno)
-        case = Case(casename, mach_no, symmetry, ref_area, ref_chord, ref_span, ref_cg, CD_p, geometry)
+        case = Case(casename=casename, mach_no=mach_no, symmetry=symmetry, ref_area=ref_area, ref_chord=ref_chord, ref_span=ref_span, ref_cg=ref_cg, CD_p=CD_p, geometry=geometry)
         return case
