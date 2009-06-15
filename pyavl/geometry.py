@@ -93,8 +93,8 @@ class Section(HasTraits):
     svortices = Trait(None, None, List)
     claf = Floatn
     cd_cl = Floatn
-    controls = Dict(Str, Instance(Control))
-    design_params = Dict(Str, Instance(DesignParameter))
+    controls = List(Instance(Control))
+    design_params = List(Instance(DesignParameter))
     type = Enum('flat plate', 'airfoil data', 'airfoil data file', 'NACA')
     data = Instance(SectionData)
     
@@ -112,8 +112,8 @@ class Section(HasTraits):
             for point in self.cd_cl:
                 file.write('%f\t%f\n' % point)
         if self.claf is not None: file.write('CLAF\n%f\n' % self.claf)
-        for design_param in self.design_params.itervalues(): design_param.write_to_file(file)
-        for control in self.controls.itervalues(): control.write_to_file(file)
+        for design_param in self.design_params: design_param.write_to_file(file)
+        for control in self.controls: control.write_to_file(file)
         file.write('')
     
     @classmethod
@@ -323,17 +323,17 @@ class Geometry(HasTraits):
     A class representing the geometry for a case in avl
     '''
     
-    surfaces = Dict(Str, Instance(Surface))
-    bodies = Dict(Str, Instance(Body))
+    surfaces = List(Instance(Surface))
+    bodies = List(Instance(Body))
     
     def write_to_file(self, file):
         file.write('# SURFACES\n')
-        for surfacename, surface in self.surfaces.iteritems():
+        for surface in self.surfaces:
             surface.write_to_file(file)
             file.write('\n')
         file.write('# END SURFACES\n\n')
         file.write('# BODIES\n')
-        for bodyname, body in self.bodies.iteritems():
+        for body in self.bodies:
             body.write_to_file(file)
             file.write('\n')
         file.write('# END BODIES\n\n')
@@ -350,8 +350,8 @@ class Geometry(HasTraits):
         while lineno < numlines:
             if 'SURFACE' == lines[lineno].upper():
                 surface, lineno = Surface.create_from_lines(lines, lineno)
-                geometry.surfaces[surface.name] = surface
+                geometry.surfaces.append(surface)
             elif 'BODY' == lines[lineno].upper():
                 body, lineno = Body.create_from_lines(lines, lineno)
-                geometry.bodies[bodies.name] = body
+                geometry.bodies.append(body)
         return geometry

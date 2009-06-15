@@ -12,7 +12,7 @@ class Test(unittest.TestCase):
     def setUp(self):
         geometry = Geometry()
         surface1 = Surface(name='surface 1', cvortices=[20,1.0], scale=[1.0,1.0,1.0])
-        geometry.surfaces[surface1.name] = surface1
+        geometry.surfaces.append(surface1)
         self.case = Case(casename='testCase', mach_no=0.0, symmetry=[0,0,0.0], ref_area=9.0, ref_chord=0.9, ref_span=10.0, ref_cg=[0.5,0.0,0.0], geometry=geometry)
         self.test_avl_case = 'ow'
 
@@ -44,6 +44,7 @@ class Test(unittest.TestCase):
         file.close()
     
     def test_ui(self):
+        pass
         self.case.configure_traits()
         self.case.geometry.configure_traits()
 
