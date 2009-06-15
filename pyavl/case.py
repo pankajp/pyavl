@@ -4,7 +4,7 @@ Created on Jun 8, 2009
 @author: pankaj
 '''
 
-from geometry import Geometry 
+from geometry2 import Geometry
 
 def filter_lines(lines):
     ret = []
