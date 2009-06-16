@@ -4,8 +4,9 @@ Created on Jun 8, 2009
 @author: pankaj
 '''
 
+import numpy
 from enthought.traits.api import HasTraits, List, Str, Float, Range, Int, Dict, File, Trait, Instance, Enum, Array
-from geometry import Geometry, Vec, Floatn
+from geometry import Geometry
 
 def filter_lines(lines):
     ret = []
@@ -31,8 +32,8 @@ class Case(HasTraits):
     ref_area = Float()
     ref_chord = Float()
     ref_span = Float()
-    ref_cg = Vec
-    CD_p = Floatn
+    ref_cg = Array(numpy.float, (3,))
+    CD_p = Float
     geometry = Instance(Geometry)
     
     def write_input_file(self, file):
@@ -44,7 +45,7 @@ class Case(HasTraits):
         file.write('#iYsym\tiZsym\tZsym\n%d\t%d\t%f\n' % tuple(self.symmetry))
         file.write('#Sref\tCref\tBref\n%f\t%f\t%f\n' % (self.ref_area, self.ref_chord, self.ref_span))
         file.write('#Xref\tYref\tZref\n%f\t%f\t%f\n' % tuple(self.ref_cg))
-        if self.CD_p is not None:
+        if self.CD_p != 0.0:
             file.write('#CD_p profile drag coefficient\n%f\n' % self.CD_p)
         file.write('\n')
         file.write('#'*70)
@@ -71,7 +72,7 @@ class Case(HasTraits):
             CD_p = float(lines[5])
             lineno = 6
         except ValueError:
-            CD_p = None
+            CD_p = 0.0
         geometry = Geometry.create_from_lines(lines, lineno)
         case = Case(casename=casename, mach_no=mach_no, symmetry=symmetry, ref_area=ref_area, ref_chord=ref_chord, ref_span=ref_span, ref_cg=ref_cg, CD_p=CD_p, geometry=geometry)
         return case

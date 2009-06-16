@@ -4,12 +4,9 @@ Created on Jun 9, 2009
 @author: pankaj
 '''
 
+import numpy
 from enthought.traits.api import HasTraits, List, Str, Float, Range, Int, Dict, File, Trait, Instance, Enum, Array
-
-Intn = Trait(None, None, Int)
-Floatn = Trait(None, None, Float)
-Vec = List(minlen=3, maxlen=3)
-Vecn = Trait(None, None, Vec)
+from enthought.traits.ui.api import View, Item, Group, ListEditor
 
 def is_sequence(obj):
      try:
@@ -22,6 +19,7 @@ def is_sequence(obj):
 def write_vars(vars, obj, file):
     for var in vars:
         attr = getattr(obj, var, None)
+        #attr = obj.__dict__.get(var,None)
         if attr is not None:
             if is_sequence(attr):
                 for i in attr: file.write('%s\t' % str(i))
@@ -29,12 +27,11 @@ def write_vars(vars, obj, file):
                 file.write('%s\n%s' % (var.upper(), str(attr)))
             file.write('\n')
 
-
 class Control(HasTraits):
     name = Str('Unnamed control surface')
     gain = Float
     x_hinge = Float
-    hinge_vec = Vec
+    hinge_vec = Array(numpy.float, (3,))
     sign_dup = Float
     
     def write_to_file(self, file):
@@ -58,11 +55,11 @@ class SectionData(HasTraits):
 
 class SectionAFILEData(SectionData):
     filename = File
-    x_range = Trait(None, None, List(Float, [0.0, 1.0], 2, 2))
+    x_range = List(Float, [0.0, 1.0], 2, 2)
     
     def write_to_file(self, file):
         file.write('AFILE')
-        if self.x_range is not None: file.write('\t%f\t%f' % self.x_range)
+        if self.x_range != [0.0, 1.0]: file.write('\t%f\t%f' % tuple(self.x_range))
         file.write('\n%s\n' % self.filename)
 
 class SectionAIRFOILData(SectionData):
@@ -71,7 +68,7 @@ class SectionAIRFOILData(SectionData):
     
     def write_to_file(self, file):
         file.write('AIRFOIL')
-        if self.x_range is not None: file.write('\t%f\t%f' % self.x_range)
+        if self.x_range != [0.0, 1.0]: file.write('\t%f\t%f' % self.x_range)
         file.write('\n')
         for point in self.data: file.write('%f\t%f\n' % point)
         file.write('\n')
@@ -87,14 +84,14 @@ class Section(HasTraits):
     '''
     Class representing a section of a section (flat plate)
     '''
-    leading_edge = Vec
+    leading_edge = Array(numpy.float, (3,))
     chord = Float
     angle = Float
-    svortices = Trait(None, None, List)
-    claf = Floatn
-    cd_cl = Floatn
-    controls = List(Instance(Control))
-    design_params = List(Instance(DesignParameter))
+    svortices = List(value=[0,1.0], minlen=2, maxlen=2)
+    claf = Float(1.0)
+    cd_cl = Array(numpy.float, (3,2))
+    controls = List(Control,[])
+    design_params = List(DesignParameter,[])
     type = Enum('flat plate', 'airfoil data', 'airfoil data file', 'NACA')
     data = Instance(SectionData)
     
@@ -104,14 +101,14 @@ class Section(HasTraits):
         file.write('#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]\n')
         file.write('%f\t%f\t%f' % tuple(self.leading_edge))
         file.write('\t%f\t%f' % (self.chord, self.angle))
-        if self.svortices is not None: file.write('\t%d\t%f' % tuple(self.svortices))
+        if self.svortices[0] != 0: file.write('\t%d\t%f' % tuple(self.svortices))
         file.write('\n')
         self.data.write_to_file(file)
-        if self.cd_cl is not None:
+        if numpy.any(numpy.isnan(self.cd_cl)):
             file.write('CDCL\n')
             for point in self.cd_cl:
                 file.write('%f\t%f\n' % point)
-        if self.claf is not None: file.write('CLAF\n%f\n' % self.claf)
+        if self.claf != 0.0: file.write('CLAF\n%f\n' % self.claf)
         for design_param in self.design_params: design_param.write_to_file(file)
         for control in self.controls: control.write_to_file(file)
         file.write('')
@@ -126,7 +123,7 @@ class Section(HasTraits):
         if len(dataline) == 7:
             svortices = dataline[5:]
         else:
-            svortices = None
+            svortices = [0,1.0]
         lineno += 2
         section = Section(leading_edge=leading_edge, chord=chord, angle=angle, svortices=svortices)
         
@@ -158,7 +155,7 @@ class Section(HasTraits):
             if len(x_range) == 3:
                 x_range = [float(val) for val in range[1:]]
             else:
-                x_range = None
+                x_range = [0.0, 1.0]
             filename = lines[lineno + 1]
             section.type = 'airfoil data file'
             section.data = SectionAFILEData(x_range=x_range, filename=filename)
@@ -207,9 +204,9 @@ class Body(HasTraits):
     name = Str('Unnamed Body')
     lsources = List
     filename = File
-    yduplicate = Floatn
-    scale = Vecn
-    translate = Vecn
+    yduplicate = Float
+    scale = Array(numpy.float, (3,))
+    translate = Array(numpy.float, (3,))
     
     def write_to_file(self, file):
         file.write('BODY\n')
@@ -229,7 +226,7 @@ class Body(HasTraits):
         surface = Surface(name, cvortices, svortices)
         yduplicate = None
         scale = None
-        translate = None
+        translate = [0.0,0.0,0.0]
         lineno += 3
         numlines = len(lines)
         while lineno < numlines:
@@ -258,22 +255,22 @@ class Surface(HasTraits):
     '''
     
     name = Str('Unnamed surface')
-    cvortices = List
-    svortices = Trait(None, None,List)
-    index = Intn
-    yduplicate = Floatn
-    scale = Vecn
-    translate = Vecn
-    angle = Floatn
-    sections = List(Instance(Section))
-        
+    cvortices = List(minlen=2, maxlen=2)
+    svortices = List(value=[0,1.0], minlen=2, maxlen=2)
+    index = Int
+    yduplicate = Float
+    scale = Array(numpy.float, (3,))
+    translate = Array(numpy.float, (3,))
+    angle = Float
+    sections = List(Section,[])
+    
     def write_to_file(self, file):
         file.write('SURFACE\n')
         file.write(self.name)
         file.write('\n')
         file.write('# Nchord\tCspace\t[ Nspan\tSspace ]\n')
         file.write('%d\t%f' % tuple(self.cvortices))
-        if self.svortices is not None: file.write('\t%d\t%f' % self.svortices.num,self.svortices.distr)
+        if self.svortices[0] != 0: file.write('\t%d\t%f' % self.svortices[0],self.svortices[1])
         file.write('\n')
         write_vars(['index', 'yduplicate', 'scale', 'translate', 'angle'], self, file)
         for section in self.sections:
@@ -289,7 +286,7 @@ class Surface(HasTraits):
         if len(vortices) == 4:
             svortices = [int(vortices[2]), float(vortices[3])]
         else:
-            svortices = None
+            svortices = [0,1.0]
         surface = Surface(name=name, cvortices=cvortices, svortices=svortices)
         lineno += 3
         numlines = len(lines)
@@ -323,8 +320,14 @@ class Geometry(HasTraits):
     A class representing the geometry for a case in avl
     '''
     
-    surfaces = List(Instance(Surface))
-    bodies = List(Instance(Body))
+    surfaces = List(Surface,[])
+    bodies = List(Body,[])
+    
+    traits_view = View(Item('surfaces', editor=ListEditor(style='custom')),
+                       Item('bodies', editor=ListEditor(style='custom')),
+                       scrollable=True,
+                       resizable=True
+                    )
     
     def write_to_file(self, file):
         file.write('# SURFACES\n')
