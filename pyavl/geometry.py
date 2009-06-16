@@ -179,13 +179,13 @@ class Section(HasTraits):
                 gain, x_hinge = cdata[:2]
                 hinge_vec = cdata[2:5]
                 sign_dup = cdata[5]
-                control = Control(name, gain, x_hinge, hinge_vec, sign_dup)
-                section.controls[name] = control
-                lineno += 2
-            elif cmd.startswith('DESI'):
-                section.claf = float(lines[lineno + 1])
+                control = Control(name=name, gain=gain, x_hinge=x_hinge, hinge_vec=hinge_vec, sign_dup=sign_dup)
+                section.controls.append(control)
                 lineno += 2
             elif cmd.startswith('CLAF'):
+                section.claf = float(lines[lineno + 1])
+                lineno += 2
+            elif cmd.startswith('DESI'):
                 ddata = lines[lineno + 1].split()
                 name = ddata[0]
                 weight = float(ddata[1])
@@ -270,7 +270,7 @@ class Surface(HasTraits):
         file.write('\n')
         file.write('# Nchord\tCspace\t[ Nspan\tSspace ]\n')
         file.write('%d\t%f' % tuple(self.cvortices))
-        if self.svortices[0] != 0: file.write('\t%d\t%f' % self.svortices[0],self.svortices[1])
+        if self.svortices[0] != 0: file.write('\t%d\t%f' % (self.svortices[0],self.svortices[1]))
         file.write('\n')
         write_vars(['index', 'yduplicate', 'scale', 'translate', 'angle'], self, file)
         for section in self.sections:
