@@ -132,7 +132,7 @@ class Section(HasTraits):
             section.type = 'NACA'
             section.data = SectionNACAData(number=number)
             lineno += 2
-        elif lines[lineno].startswith('AIRFOIL'):
+        elif lines[lineno].startswith('AIRF'):
             x_range = lines[lineno + 1].split()
             if len(range) == 3:
                 x_range = [float(val) for val in range[1:]]
@@ -150,7 +150,7 @@ class Section(HasTraits):
                 datapt = lines[lineno].split()
             section.type = 'airfoil data'
             section.data = SectionAIRFOILData(x_range=x_range, data=dataline)
-        elif lines[lineno].startswith('AFILE'):
+        elif lines[lineno].startswith('AFIL'):
             x_range = lines[lineno + 1].split()
             if len(x_range) == 3:
                 x_range = [float(val) for val in range[1:]]
@@ -166,13 +166,13 @@ class Section(HasTraits):
         numlines = len(lines)
         while lineno < numlines:
             cmd = lines[lineno]
-            if cmd == 'CLAF':
+            if cmd.startswith('CLAF'):
                 section.claf = float(lines[lineno + 1])
                 lineno += 2
-            elif cmd == 'CDCL':
+            elif cmd.startswith('CDCL'):
                 section.cd_cl = float(lines[lineno + 1])
                 lineno += 2
-            elif cmd == 'CONTROL':
+            elif cmd.startswith('CONT'):
                 cdata = lines[lineno + 1].split()
                 name = cdata[0]
                 cdata = [float(val) for val in cdata[1:]]
@@ -182,10 +182,10 @@ class Section(HasTraits):
                 control = Control(name, gain, x_hinge, hinge_vec, sign_dup)
                 section.controls[name] = control
                 lineno += 2
-            elif cmd == 'DESIGN':
+            elif cmd.startswith('DESI'):
                 section.claf = float(lines[lineno + 1])
                 lineno += 2
-            elif cmd == 'CLAF':
+            elif cmd.startswith('CLAF'):
                 ddata = lines[lineno + 1].split()
                 name = ddata[0]
                 weight = float(ddata[1])
@@ -231,16 +231,16 @@ class Body(HasTraits):
         numlines = len(lines)
         while lineno < numlines:
             cmd = lines[lineno]
-            if cmd == 'YDUPLICATE':
+            if cmd.startswith('YDUP'):
                 yduplicate = float(lines[lineno + 1])
                 lineno += 2
-            elif cmd == 'SCALE':
+            elif cmd.startswith('SCAL'):
                 scale = [float(val) for val in lines[lineno + 1].split()]
                 lineno += 2
-            elif cmd == 'TRANSLATE':
+            elif cmd.startswith('TRAN'):
                 translate = [float(val) for val in lines[lineno + 1].split()]
                 lineno += 2
-            elif cmd == 'BFILE':
+            elif cmd.startswith('BFIL'):
                 filename = [float(val) for val in lines[lineno + 1].split()]
                 lineno += 2
             else:
@@ -292,22 +292,22 @@ class Surface(HasTraits):
         numlines = len(lines)
         while lineno < numlines:
             cmd = lines[lineno]
-            if cmd == 'INDEX':
+            if cmd.startswith('INDE'):
                 surface.index = float(lines[lineno + 1])
                 lineno += 2
-            elif cmd == 'YDUPLICATE':
+            elif cmd.startswith('YDUP'):
                 surface.yduplicate = float(lines[lineno + 1])
                 lineno += 2
-            elif cmd == 'SCALE':
+            elif cmd.startswith('SCAL'):
                 surface.scale = [float(val) for val in lines[lineno + 1].split()]
                 lineno += 2
-            elif cmd == 'TRANSLATE':
+            elif cmd.startswith('TRAN'):
                 surface.translate = [float(val) for val in lines[lineno + 1].split()]
                 lineno += 2
-            elif cmd == 'ANGLE':
+            elif cmd.startswith('ANGL'):
                 surface.angle = float(lines[lineno + 1])
                 lineno += 2
-            elif cmd == 'SECTION':
+            elif cmd.startswith('SECT'):
                 section, lineno = Section.create_from_lines(lines, lineno)
                 surface.sections.append(section)
             else:
@@ -351,10 +351,10 @@ class Geometry(HasTraits):
         numlines = len(lines)
         geometry = Geometry()
         while lineno < numlines:
-            if 'SURFACE' == lines[lineno].upper():
+            if lines[lineno].upper().startswith('SURF'):
                 surface, lineno = Surface.create_from_lines(lines, lineno)
                 geometry.surfaces.append(surface)
-            elif 'BODY' == lines[lineno].upper():
+            elif lines[lineno].upper().startswith('BODY'):
                 body, lineno = Body.create_from_lines(lines, lineno)
                 geometry.bodies.append(body)
         return geometry

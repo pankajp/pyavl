@@ -62,14 +62,14 @@ class Case(HasTraits):
         lines = filter_lines(lines)
         lineno = 0
         casename = lines[0]
-        mach_no = float(lines[1])
+        mach_no = float(lines[1].split()[0])
         symmetry = lines[2].split()
         symmetry = [int(symmetry[0]), int(symmetry[1]), float(symmetry[2])]
-        ref_area, ref_chord, ref_span = [float(value) for value in lines[3].split()]
-        ref_cg = [float(value) for value in lines[4].split()]
+        ref_area, ref_chord, ref_span = [float(value) for value in lines[3].split()[:3]]
+        ref_cg = [float(value) for value in lines[4].split()[:3]]
         lineno = 5
         try:
-            CD_p = float(lines[5])
+            CD_p = float(lines[5].split()[0])
             lineno = 6
         except ValueError:
             CD_p = 0.0
