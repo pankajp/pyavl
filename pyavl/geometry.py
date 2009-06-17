@@ -258,7 +258,7 @@ class Surface(HasTraits):
     cvortices = List(minlen=2, maxlen=2)
     svortices = List(value=[0,1.0], minlen=2, maxlen=2)
     index = Int
-    yduplicate = Float
+    yduplicate = Float(numpy.nan)
     scale = Array(numpy.float, (3,))
     translate = Array(numpy.float, (3,))
     angle = Float

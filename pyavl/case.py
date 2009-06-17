@@ -76,3 +76,19 @@ class Case(HasTraits):
         geometry = Geometry.create_from_lines(lines, lineno)
         case = Case(casename=casename, mach_no=mach_no, symmetry=symmetry, ref_area=ref_area, ref_chord=ref_chord, ref_span=ref_span, ref_cg=ref_cg, CD_p=CD_p, geometry=geometry)
         return case
+    
+if __name__ == '__main__':
+    file = open('/opt/idearesearch/avl/runs/allegro.avl')
+    case = Case.case_from_input_file(file)
+    #import sys
+    case.configure_traits()
+    #self.case.geometry.surfaces[0].write_to_file(sys.stdout)
+    
+    #self.case.geometry.configure_traits()
+    #self.case.geometry.surfaces[0].configure_traits()
+    #self.case.geometry.write_to_file(sys.stdout)
+    from pyavl.ui.geometry_viewer import GeometryViewer
+    print case.geometry, type(case.geometry)
+    g = GeometryViewer(geometry=case.geometry)
+    g.configure_traits(scrollable=True)
+    

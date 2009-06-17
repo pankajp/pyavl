@@ -26,4 +26,7 @@ class AVL(object):
         self.avl.sendline('plop')
         self.avl.sendline('g')
         self.avl.sendline('')
-        
+
+    def get_output(self):
+        #FIXME: implement
+        pass
