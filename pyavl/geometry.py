@@ -7,6 +7,7 @@ Created on Jun 9, 2009
 import numpy
 from enthought.traits.api import HasTraits, List, Str, Float, Range, Int, Dict, File, Trait, Instance, Enum, Array
 from enthought.traits.ui.api import View, Item, Group, ListEditor
+from pyavl.utils.naca4_plotter import get_NACA4_data
 
 def is_sequence(obj):
      try:
@@ -52,6 +53,10 @@ class DesignParameter(HasTraits):
 class SectionData(HasTraits):
     def write_to_file(self, file):
         pass
+    
+    def get_data_points(self):
+        return numpy.array([[0.0, 0.0],
+                      [1.0, 0.0]])
 
 class SectionAFILEData(SectionData):
     filename = File
@@ -61,6 +66,9 @@ class SectionAFILEData(SectionData):
         file.write('AFILE')
         if self.x_range != [0.0, 1.0]: file.write('\t%f\t%f' % tuple(self.x_range))
         file.write('\n%s\n' % self.filename)
+    
+    def get_data_points(self):
+        return numpy.loadtxt(open(self.filename), skiprows=1)
 
 class SectionAIRFOILData(SectionData):
     data = Array
@@ -72,13 +80,18 @@ class SectionAIRFOILData(SectionData):
         file.write('\n')
         for point in self.data: file.write('%f\t%f\n' % point)
         file.write('\n')
-
+    
+    def get_data_points(self):
+        return data
+    
 class SectionNACAData(SectionData):
     number = Int
     
     def write_to_file(self, file):
         file.write('NACA\n%d\n' % self.number)
     
+    def get_data_points(self):
+        return get_NACA4_data(self.number)
 
 class Section(HasTraits):
     '''

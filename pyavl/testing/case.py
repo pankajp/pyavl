@@ -5,14 +5,16 @@ Created on Jun 10, 2009
 '''
 import unittest
 from pyavl.case import Case, filter_lines
-from pyavl.geometry import Geometry, Surface
+from pyavl.geometry import Geometry, Surface, Section, SectionAFILEData
 
 class Test(unittest.TestCase):
 
     def setUp(self):
         geometry = Geometry()
         surface1 = Surface(name='surface 1', cvortices=[20,1.0], scale=[1.0,1.0,1.0], index=1, yduplicate=1.0)
-        geometry.surfaces = [surface1]
+        section1data = SectionAFILEData(filename='/opt/idearesearch/avl/runs/ag42d.dat')
+        section1 = Section(type='airfoil data file', data=section1data)
+        geometry.surfaces.append(surface1)
         self.case = Case(casename='testCase', mach_no=0.0, symmetry=[0,0,0.0], ref_area=9.0, ref_chord=0.9, ref_span=10.0, ref_cg=[0.5,0.0,0.0], geometry=geometry)
         self.test_avl_case = 'allegro'
 

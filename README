@@ -1,0 +1,30 @@
+pyavl is a python interface to the AVL (Athena Vortex Lattice) program
+
+Requirements:
+- python
+- pexpect
+- AVL executable
+- Traits, TraitsGUI and Mayavi from code.enthought.com
+
+
+What pyavl does currently: (23/06/2009)
+- provide a python interface to run the avl program through pexpect
+- ability to load existing .avl input files, change the geometry by adding/removing/modifying
+   surfaces, sections and bodies through python and saving the .avl file
+- visualize the geometry through vtk (mayavi) : incomplete; only the section chords are
+    currently displayed, and the surfaces do not honor the scale and translate keywords
+- case .run files can be loaded into the running avl instance (they are not parsed in python)
+    the loaded run cases are interpreted into python from the output of avl. The various
+    constraints and parameters can be modified from python
+- GUI is not not developed. To see a primitive GUI the user can call the .configure_traits()
+    method on any instance of a class derived from HasTraits class. The displayed GUI has
+    suitable editors for all Traits defined for the instance
+- Using the pexpect spawn instance avl, the user can send arbitrary commands to the avl engine
+    Make sure to return to base state after that by calling AVL.goto_state(avl) so that the
+    other calls from python are not confused
+
+---
+Sample pyavl session:
+- For starting the pyavl usage check the test functions in testing.avl and testing.case modules
+
+

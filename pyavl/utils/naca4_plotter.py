@@ -13,15 +13,22 @@ http://blenderartists.org/forum/showthread.php?t=9521
 #
 #######################################################################
 
+import numpy
 
-def plotNACA4(p=0.05, m=0.5, xx=0.1, nv=100, nvbl=50, le=0.02):
+def get_NACA4_data(number):
+    p = (number // 1000) / 100.0
+    m = (number // 100)%10 / 100.0
+    xx = (number % 100) / 100.0
+    return get_NACA_data(p, m, xx)
+
+def get_NACA_data(p=0.05, m=0.5, xx=0.1, nv=100, nvbl=10, le=0.01):
     '''    
 	p = max camber (in percent of chord)
-	m = chordwise location of max camber (0 <= m < 1)
 	xx = airfoil thickness in percent of chord
 	nv = (half) number of (total) vertices
 	nvbl = number of vertices before le
 	le = point on chord
+	m = chordwise location of max camber (0 <= m < 1)
     '''
     
     # constants in thickness equation of NACA 4-series (from NASA TM 4741) 
@@ -62,12 +69,13 @@ def plotNACA4(p=0.05, m=0.5, xx=0.1, nv=100, nvbl=50, le=0.02):
             z = 0
         pointsx.append(x)
         pointsy.append(y)
-    
-    return pointsx,pointsy
+    ret = numpy.array([pointsx,pointsy])
+    return ret.T
 
 
 if __name__ == '__main__':
     from pylab import plot, show
-    points = PlotNACA4()
-    plot(*points)
+    points = get_NACA_data()
+    plot(points[:,0], points[:,1], '.-')
+    #plot(points[0][2:3], points[1][2:3], '.r')
     show()

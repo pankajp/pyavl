@@ -1,0 +1,11 @@
+TODO for pyavl
+
+23/09/2009
+- A  Enable interpretation of the execution output of avl to return output variables
+- A  create custom GUI views for the components
+- A  implement geometry viewer for all parts of geometry (surface+body) and also implement
+    scale and translate keywords
+- A  implement cross section viewer for all section types (NACA, AFILE and AIRFOIL)
+- B  embed the gui in an envisage workbench as views of various components (as in sample)
+- B  Enable use of .mass file
+
