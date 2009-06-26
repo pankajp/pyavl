@@ -37,20 +37,22 @@ class Test(unittest.TestCase):
     def test_avl_ui(self):
         filename = '/opt/idearesearch/avl/runs/vanilla.avl'
         self.avl.load_case_from_file(filename)
-        self.avl.configure_traits()
+        #self.avl.configure_traits()
     
     def test_param_modify(self):
         filename = '/opt/idearesearch/avl/runs/vanilla.avl'
         self.avl.load_case_from_file(filename)
         rc = self.avl.run_cases[0]
-        p = rc.parameters_info[0]
-        rc.parameters[p] = 2.2
-        v = None
-        for parameter,val,unit in rc.parameters:
-            if parameter == p:
-                v = val
-        assert v is not None
-        assert v == 2.2
+        p = rc.parameters_info['bank']
+        rc.parameters['bank'] = 2.2
+        assert 'bank' in rc.parameters
+        assert rc.parameters['bank'] == 2.2
+        
+    def test_runcase_output(self):
+        filename = '/opt/idearesearch/avl/runs/vanilla.avl'
+        self.avl.load_case_from_file(filename)
+        rc = self.avl.run_cases[0]
+        print rc.get_output()
         
 
 if __name__ == "__main__":
