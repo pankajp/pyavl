@@ -6,15 +6,33 @@ Created on Jun 8, 2009
 
 import pexpect
 import os
-from enthought.traits.api import HasTraits, List, Float, Dict, String, Int, Tuple, Enum, cached_property, Python, Property, on_trait_change
+from enthought.traits.api import HasTraits, List, Float, Dict, String, Int, Tuple, Enum, cached_property, Python, Property, on_trait_change, Complex, Array
 from enthought.traits.ui.api import EnumEditor
 import re
+import numpy
+#from pyavl.runcase import RunCase
+
+    
+class EigenMode(HasTraits):
+    eigenvalue = Complex()
+    # the = theta
+    order = List(String, ['u','w','q','the','v','p','r','phi','x','y','z','psi'])
+    eigenvector = Array(numpy.complex, shape=(12,))
+
+class EigenMatrix(HasTraits):
+    # include the control vector
+    matrix = Array(numpy.float, shape=(12,(12,None)))
+    order = List(String, ['u','w','q','the','v','p','r','phi','x','y','z','psi'])
+
 
 class RunCase(HasTraits):
     patterns = {'constrained':re.compile(r"""(?P<cmd>[A-Z0-9]+)\s+(?P<pattern>.+?)\s+->\s+(?P<constraint>\S+)\s+=\s+(?P<val>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)"""),
                 'constraint':re.compile(r"""(?P<sel>->)?\s*(?P<cmd>[A-Z0-9])+\s+(?P<pattern>.+?)\s+=\s+(?P<val>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)"""),
                 'parameter':re.compile(r"""(?P<cmd>[A-Z]+)\s+(?P<pattern>.+?)\s+=\s+(?P<val>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)(\ +(?P<unit>\S+))?"""),
-                'var':re.compile(r"""(?P<name>\S+?)\s*?=\s*?(?P<value>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)""")
+                'var':re.compile(r"""(?P<name>\S+?)\s*?=\s*?(?P<value>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)"""),
+                'float':re.compile(r'(?P<value>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)'),
+                'mode' :re.compile(r"""mode (\d+?):\s*?(?P<real>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)\s+(?P<imag>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)"""),
+                'modevec': re.compile(r"""(?P<name>[a-z]+?)(\s*?):\s*(?P<real>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)\s+(?P<imag>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)""")
                 }
     number = Int
     name = String
@@ -200,7 +218,7 @@ class RunCase(HasTraits):
             self.parameters[name] = float(group['val'])
         AVL.goto_state(avl)
         
-    def get_output(self):
+    def get_run_output(self):
         self.avl.sendline('oper')
         self.avl.expect(AVL.patterns['/oper'])
         self.avl.sendline('x')
@@ -215,6 +233,33 @@ class RunCase(HasTraits):
         self.output = ret
         return ret
     
+    def get_modes(self):
+        self.avl.sendline('mode')
+        self.avl.expect(AVL.patterns['/mode'])
+        self.avl.sendline('n')
+        self.avl.expect(AVL.patterns['/mode'])
+        if re.search(r'Eigenmodes not computed for run case', self.avl.before):
+            print 'Error : \n', self.avl.before
+            return
+        ret = {}
+        i1 = re.search(r"""Run case\s*?\d+?:.*?\n""", self.avl.before).end()
+        i2 = re.search(r"""Run-case parameters for eigenmode analyses""", self.avl.before[i1:]).start()
+        text = self.avl.before[i1 : i1+i2]
+        i = 0
+        modes = []
+        while i < len(text):
+            mode = re.search(RunCase.patterns['mode'], text[i:])
+            if mode is None:
+                i += 1
+                continue
+            eigenvalue = float(mode.groups('real')) + j*float(mode.groups('imag'))
+            eigenvector = {}
+            for match in re.finditer(RunCase.patterns['modeval'], ' '.join(text[i+1:i+4])):
+                eigenvector[match.groups('name')] = float(mode.groups('real')) + j*float(mode.groups('imag'))
+            modes.append(EigenMode(eigenvalue=eigenvalue, **eigenvector))
+            i += 5
+        return modes
+    
 class AVL(HasTraits):
     '''
     A class representing an avl program instance.
@@ -223,11 +268,18 @@ class AVL(HasTraits):
                 '/oper' : re.compile(r"""\.OPER \(case (?P<case_num>\d)/(?P<num_cases>\d)\)   c>  """),
                 '/plop' : r'Option, Value   \(or <Return>\)    c>  ',
                 '/oper/a': re.compile(r"""Select new  constraint,value  for (?P<param>.*?)\s+c>  """),
-                '/oper/m': r'Enter parameter, value  \(or  # - \+ N \)   c>  '
+                '/oper/m': r'Enter parameter, value  \(or  # - \+ N \)   c>  ',
+                '/mode' : r'\.MODE   c>  ',
+                'num'   : r'(?P<val>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)'
                 }
     run_cases = List(RunCase, [])
     state = String('/')
-    selected_case = Int
+    selected_case = Int(1)
+    
+    def _selected_case_chandeg(self):
+        self.avl.sendline('oper')
+        self.avl.sendline(str(self.selected_case))
+        self.avl.sendline()
     
     def __init__(self, path='', logfile='/opt/idearesearch/avllog'):
         '''
@@ -277,6 +329,7 @@ class AVL(HasTraits):
         AVL.goto_state(self.avl)
         for case_num in xrange(1, num_cases + 1):
             self.run_cases.append(RunCase.get_case_from_avl(self.avl, case_num))
+        self.selected_case = 1
     
     def load_case_from_file(self, filename):
         self.avl.sendline('load %s' % filename)

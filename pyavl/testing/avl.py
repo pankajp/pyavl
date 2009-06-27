@@ -33,6 +33,7 @@ class Test(unittest.TestCase):
         filename = '/opt/idearesearch/avl/runs/vanilla.avl'
         self.avl.load_case_from_file(filename)
         runcase = avl.RunCase.get_case_from_avl(self.avl.avl, 1)
+        assert runcase is not None
         
     def test_avl_ui(self):
         filename = '/opt/idearesearch/avl/runs/vanilla.avl'
@@ -52,7 +53,20 @@ class Test(unittest.TestCase):
         filename = '/opt/idearesearch/avl/runs/vanilla.avl'
         self.avl.load_case_from_file(filename)
         rc = self.avl.run_cases[0]
-        print rc.get_output()
+        out = rc.get_run_output()
+        print out
+        print len(out)
+        
+    def test_eigenmode_output(self):
+        filename = '/opt/idearesearch/avl/runs/vanilla.avl'
+        self.avl.load_case_from_file(filename)
+        rc = self.avl.run_cases[0]
+        print rc.parameters.keys()
+        rc.parameters['velocity'] = 100.0
+        out = rc.get_modes()
+        print out
+        print len(out)
+        assert len(out) == 12
         
 
 if __name__ == "__main__":
