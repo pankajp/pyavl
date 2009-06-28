@@ -252,20 +252,17 @@ class RunCase(HasTraits):
         i1 = re.search(r"""Run case\s*?\d+?:.*?\n""", self.avl.before).end()
         i2 = re.search(r"""Run-case parameters for eigenmode analyses""", self.avl.before[i1:]).start()
         text = self.avl.before[i1 : i1+i2]
-        i = 0
         modes = []
-        text = text.splitlines()
-        while i < len(text):
-            mode_eval = re.search(RunCase.patterns['mode'], text[i:])
-            if mode_eval is None:
-                i += 1
-                continue
+        for mode_eval in re.finditer(RunCase.patterns['mode'], text):
             eigenvalue = float(mode_eval.group('real')) + 1j*float(mode_eval.group('imag'))
             mode = EigenMode(eigenvalue=eigenvalue)
+            i = 0
             for match in re.finditer(RunCase.patterns['modeveccomp'], ' '.join(text[i+1:i+4])):
+                i += 1
                 mode.eigenvector[mode.order.index[match.groups('name')]] = float(mode_eval.groups('real')) + 1j*float(mode_eval.groups('imag'))
+                if i > 11:
+                    break
             modes.append(mode)
-            i += 5
         return modes
     
 class AVL(HasTraits):

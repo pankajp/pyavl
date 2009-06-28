@@ -65,7 +65,7 @@ class Test(unittest.TestCase):
         rc.parameters['velocity'] = 100.0
         print rc.parameters['velocity']
         out = rc.get_modes()
-        print out
+        print [o.eigenvalue for o in out]
         print 'num modes:', len(out)
         assert len(out) == 8
         
