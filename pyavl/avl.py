@@ -32,7 +32,7 @@ class RunCase(HasTraits):
                 'var':re.compile(r"""(?P<name>\S+?)\s*?=\s*?(?P<value>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)"""),
                 'float':re.compile(r'(?P<value>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)'),
                 'mode' :re.compile(r"""mode (\d+?):\s*?(?P<real>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)\s+(?P<imag>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)"""),
-                'modevec': re.compile(r"""(?P<name>[a-z]+?)(\s*?):\s*(?P<real>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)\s+(?P<imag>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)""")
+                'modeveccomp': re.compile(r"""(?P<name>[a-z]+?)(\s*?):\s*(?P<real>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)\s+(?P<imag>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)""")
                 }
     number = Int
     name = String
@@ -122,8 +122,9 @@ class RunCase(HasTraits):
                                 ('pitch rate', 'pitch rate', 0.0),
                             ])
     
-    @on_trait_change('constraints')
+    @on_trait_change('constraints[]')
     def update_constraints(self):
+        print 'constraints changed'
         self.avl.sendline('oper')
         for p, c, v in self.constraints:
             p1 = self.constraint_cmd[p]
@@ -132,14 +133,16 @@ class RunCase(HasTraits):
             self.avl.expect(AVL.patterns['/oper'])
         AVL.goto_state(self.avl)
     
-    @on_trait_change('parameters')
+    @on_trait_change('parameters[]')
     def update_parameters(self):
         self.avl.sendline('oper')
         self.avl.sendline('m')
         self.avl.expect(AVL.patterns['/oper/m'])
+        self.avl.sendline('V %f' %max(self.parameters['velocity'],0.001))
         for p, v in self.parameters.iteritems():
             cmd = self.parameters_info[p][0]
-            self.avl.sendline('%s %f' % (cmd, v))
+            if cmd != 'V':
+                self.avl.sendline('%s %f' % (cmd, v))
         AVL.goto_state(self.avl)
     
     @classmethod
@@ -209,13 +212,17 @@ class RunCase(HasTraits):
         i2 = - 1
         constraint_lines = lines[i1 + 1:i2]
         groups = [re.search(RunCase.patterns['parameter'], line).groupdict() for line in constraint_lines]
+        params = {}
+        #params.update(self.parameters)
         for group in groups:
             pattern = group['pattern']
             name = self.parameter_names.get(pattern, pattern)
             unit = group.get('unit', '')
             unit = unit if unit is not None else ''
             self.parameters_info[name] = (group['cmd'], pattern, unit)
-            self.parameters[name] = float(group['val'])
+            params[name] = float(group['val'])
+        #self.parameters[name] = float(group['val'])
+        self.parameters.update(params)
         AVL.goto_state(avl)
         
     def get_run_output(self):
@@ -247,16 +254,17 @@ class RunCase(HasTraits):
         text = self.avl.before[i1 : i1+i2]
         i = 0
         modes = []
+        text = text.splitlines()
         while i < len(text):
-            mode = re.search(RunCase.patterns['mode'], text[i:])
-            if mode is None:
+            mode_eval = re.search(RunCase.patterns['mode'], text[i:])
+            if mode_eval is None:
                 i += 1
                 continue
-            eigenvalue = float(mode.groups('real')) + j*float(mode.groups('imag'))
-            eigenvector = {}
-            for match in re.finditer(RunCase.patterns['modeval'], ' '.join(text[i+1:i+4])):
-                eigenvector[match.groups('name')] = float(mode.groups('real')) + j*float(mode.groups('imag'))
-            modes.append(EigenMode(eigenvalue=eigenvalue, **eigenvector))
+            eigenvalue = float(mode_eval.group('real')) + 1j*float(mode_eval.group('imag'))
+            mode = EigenMode(eigenvalue=eigenvalue)
+            for match in re.finditer(RunCase.patterns['modeveccomp'], ' '.join(text[i+1:i+4])):
+                mode.eigenvector[mode.order.index[match.groups('name')]] = float(mode_eval.groups('real')) + 1j*float(mode_eval.groups('imag'))
+            modes.append(mode)
             i += 5
         return modes
     

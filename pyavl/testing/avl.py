@@ -63,12 +63,14 @@ class Test(unittest.TestCase):
         rc = self.avl.run_cases[0]
         print rc.parameters.keys()
         rc.parameters['velocity'] = 100.0
+        print rc.parameters['velocity']
         out = rc.get_modes()
         print out
-        print len(out)
-        assert len(out) == 12
+        print 'num modes:', len(out)
+        assert len(out) == 8
         
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.test_init']
     unittest.main()
+    
