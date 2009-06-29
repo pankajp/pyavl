@@ -105,7 +105,7 @@ class Section(HasTraits):
     claf = Float(1.0)
     cd_cl = Array(numpy.float, (3,2))
     controls = List(Control,[])
-    design_params = List(DesignParameter,[])
+    design_params = Dict(String, Instance(DesignParameter),{})
     type = Enum('flat plate', 'airfoil data', 'airfoil data file', 'NACA')
     data = Instance(SectionData)
     
@@ -203,7 +203,7 @@ class Section(HasTraits):
                 ddata = lines[lineno + 1].split()
                 name = ddata[0]
                 weight = float(ddata[1])
-                design = DesignParameter(name, weight)
+                design = DesignParameter(name=name, weight=weight)
                 section.design_params[name] = design
                 lineno += 2
             else:
@@ -221,6 +221,13 @@ class Body(HasTraits):
     yduplicate = Float
     scale = Array(numpy.float, (3,), numpy.ones((3,)))
     translate = Array(numpy.float, (3,))
+    num_pts = Int(10)
+    # pt, xy
+    data = Property(Array(numpy.float), depends_on='filename')
+    @cached_property
+    def _get_data(self):
+        return numpy.loadtxt(open(self.filename), skiprows=1)
+    
     
     def write_to_file(self, file):
         file.write('BODY\n')
@@ -237,29 +244,29 @@ class Body(HasTraits):
         name = lines[lineno + 1]
         sources = lines[lineno + 2].split()
         lsources = [int(sources[0]), float(sources[1])]
-        surface = Surface(name, cvortices, svortices)
-        yduplicate = None
-        scale = None
-        translate = [0.0,0.0,0.0]
+        body = Body(name=name, lsources=lsources)
         lineno += 3
         numlines = len(lines)
         while lineno < numlines:
             cmd = lines[lineno]
             if cmd.startswith('YDUP'):
                 yduplicate = float(lines[lineno + 1])
+                body.yduplicate = yduplicate
                 lineno += 2
             elif cmd.startswith('SCAL'):
                 scale = [float(val) for val in lines[lineno + 1].split()]
+                body.scale = scale
                 lineno += 2
             elif cmd.startswith('TRAN'):
                 translate = [float(val) for val in lines[lineno + 1].split()]
+                body.translate = translate
                 lineno += 2
             elif cmd.startswith('BFIL'):
-                filename = [float(val) for val in lines[lineno + 1].split()]
+                filename = lines[lineno + 1]
+                body.filename = filename
                 lineno += 2
             else:
                 break
-        body = Body(name, lsources, filename, yduplicate, scale, translate)
         return body, lineno
 
 
@@ -382,4 +389,6 @@ class Geometry(HasTraits):
             elif lines[lineno].upper().startswith('BODY'):
                 body, lineno = Body.create_from_lines(lines, lineno)
                 geometry.bodies.append(body)
+            else:
+                lineno += 1
         return geometry

@@ -5,9 +5,9 @@ Created on Jun 15, 2009
 '''
 
 import numpy
-from pyavl.geometry import Geometry, SectionData, Section, Surface
+from pyavl.geometry import Geometry, SectionData, Section, Surface, Body
 
-from enthought.traits.api import HasTraits, Range, Instance, on_trait_change, Array, Property, cached_property, List
+from enthought.traits.api import HasTraits, Range, Instance, on_trait_change, Array, Property, cached_property, List, Int, Tuple, Float
 from enthought.traits.ui.api import View, Item, Group
 from enthought.tvtk.pyface.scene_editor import SceneEditor
 from enthought.mayavi.tools.mlab_scene_model import MlabSceneModel
@@ -40,6 +40,7 @@ class SectionViewer(HasTraits):
         return self.data[:, 1]
     
     def __init__(self, *l, **kw):
+        # TODO: implement aspect ratio maintaining
         HasTraits.__init__(self, *l, **kw)
         plotdata = ArrayPlotData(x=self.pointsx, y=self.pointsy)
         plot = Plot(plotdata)
@@ -60,17 +61,60 @@ class SectionViewer(HasTraits):
                         resizable=True,),
                 resizable=True
             )
-
+    
+class BodyViewer(HasTraits):
+    body = Instance(Body)
+    # x,dia
+    diameters = Property(Array(numpy.float), depends_on='_cp,num_pts')
+    num_pts = Int(20)
+    # numpoints, xyx radius
+    bodydata = Property(Array(dtype=numpy.float, shape=(None, 4)), depends_on='diameters')
+    # inflexion_pt, min, max of the x coordinates
+    data_props = Property(Tuple(Int, Float, Float), depends_on='body.data')
+    @cached_property
+    def _get_data_props(self):
+        x = self.body.data[:, 0]
+        if x[1] > x[0]:
+            return numpy.argmax(x), numpy.min(x), numpy.max(x)
+        else:
+            return numpy.argmin(x), numpy.min(x), numpy.max(x)
+    @cached_property
+    def _get_diameters(self):
+        x = numpy.linspace(numpy.min(self.data_props[2]), numpy.min(self.data_props[1]), self.num_pts)
+        # datax, datay
+        dxu, dyu = self.body.data[:self.data_props[0], 0], self.body.data[:self.data_props[0], 1]
+        dxl, dyl = self.body.data[self.data_props[0] - 1:, 0], self.body.data[self.data_props[0] - 1:, 1]
+        #iu, il = numpy.searchsorted(dxu, x), numpy.searchsorted(dxl, x)
+        #yu = dyu[iu] - (dyu[iu] - dyu[iu - 1]) * (dxu[iu]-x) / (dxu[iu]-dx[iu-1])
+        #yl = dyl[il] - (dyl[il] - dyl[il - 1]) * (dxl[il]-x) / (dxl[il]-dx[il-1])
+        yu = numpy.interp(x, dxu, dyu)
+        yl = numpy.interp(x, dxl, dyl)
+        return numpy.array([x,abs(yu-yl)]).T
+    # superior will take care of yduplicate
+    @cached_property
+    def _get_bodydata(self):
+        ret = numpy.empty((self.num_pts, 4))
+        # y,z coords are 0
+        ret[:,1:3] = 0.0
+        # scale : radii (by sqrt(y*z)) and x
+        # set the radii
+        ret[:,3] = self.diameters[:,1]/2 * (self.body.scale[1]*self.body.scale[2])**0.5
+        # set the radii centers
+        ret[:,0] = self.diameters[:,0] * self.body.scale[0]
+        # translate
+        ret[:,:3] += self.body.translate
+        return ret
+    
 class SurfaceViewer(HasTraits):
     # sorted by span y coordinate
     surface = Instance(Surface)
     # section chords : leading edge, trailing edge -> to be set by sectiondata
-    section_chords = Array(dtype=numpy.float, shape=(None,2,3))
+    section_chords = Array(dtype=numpy.float, shape=(None, 2, 3))
     # min 2 points in a section
     # List : section , point , xyz
     sectiondata = Property(List(Array(dtype=numpy.float, shape=((2, None), 3)), depends_on='surface'))
     # array : section , num_pts, xyz
-    surfacedata = Property(Array(dtype=numpy.float, shape=(None,None,3)), depends_on='sectiondata')
+    surfacedata = Property(Array(dtype=numpy.float, shape=(None, None, 3)), depends_on='sectiondata')
     @cached_property
     def _get_sectiondata(self):
         ret = []
@@ -87,7 +131,7 @@ class SurfaceViewer(HasTraits):
             # rotate by the angle = section+surface angle
             angle = section.angle + self.surface.angle
             c, s = numpy.cos(angle * numpy.pi / 180), numpy.sin(angle * numpy.pi / 180)
-            data[:,0], data[:,2] =  data[:,0]*c + data[:,2]*s, data[:,2]*c - data[:,0]*s
+            data[:, 0], data[:, 2] = data[:, 0] * c + data[:, 2] * s, data[:, 2] * c - data[:, 0] * s
             # translate to the leading edge
             data += section.leading_edge
             # transformations inherited from surface
@@ -96,41 +140,28 @@ class SurfaceViewer(HasTraits):
             
             ret.append(data)
             # get trailing edge
-            te = numpy.array([section.chord*c,
+            te = numpy.array([section.chord * c,
                               0,
-                              -section.chord*s])
+                              - section.chord * s])
             te += section.leading_edge
             #assert data[1,2] == te[2]
             chords.append(numpy.array([section.leading_edge, te]))
             if numpy.isfinite(self.surface.yduplicate):
                 #print 'ydup'
                 data2 = numpy.empty(shape=data.shape)
-                data2[:,0] = data[:,0]
-                data2[:,2] = data[:,2]
-                data2[:,1] = self.surface.yduplicate - data[:,1]
-                le2 = numpy.array([section.leading_edge[0], self.surface.yduplicate-section.leading_edge[1], section.leading_edge[2]])
-                te2 = numpy.array([te[0], self.surface.yduplicate-te[1], te[2]])
+                data2[:, 0] = data[:, 0]
+                data2[:, 2] = data[:, 2]
+                data2[:, 1] = self.surface.yduplicate - data[:, 1]
+                le2 = numpy.array([section.leading_edge[0], self.surface.yduplicate - section.leading_edge[1], section.leading_edge[2]])
+                te2 = numpy.array([te[0], self.surface.yduplicate - te[1], te[2]])
                 #print data[:,1], data2[:,1]
                 ret.append(data2)
                 chords.append(numpy.array([le2, te2]))
-        #print ret
-        ret.sort(key=lambda x: x[0,1])
-        chords.sort(key=lambda x: x[0,1])
+        ret.sort(key=lambda x: x[0, 1])
+        chords.sort(key=lambda x: x[0, 1])
         chords = numpy.array(chords)
-        #out = numpy.array(ret)
-        # FIXME: sort the list on y corrdinates
-        # sort by y position of the section
-        #arg_sort = numpy.argsort(out[:,0,1])
-        #out = out[arg_sort]
-        #chords = numpy.array(chords)[arg_sort]
-        # surface transforms
-        #print('Scale : %s' %str(self.surface.scale))
-        #assert all(self.surface.scale > 0)
-        #out *= self.surface.scale
-        #out += self.surface.translate
         chords *= self.surface.scale
         chords += self.surface.translate
-        # angle rotation done for each section separately
         self.section_chords = chords
         assert len(self.section_chords) == len(ret)
         return ret
@@ -138,9 +169,9 @@ class SurfaceViewer(HasTraits):
     @cached_property
     def _get_surfacedata(self, num_sectionpts=6):
         ret = numpy.empty((len(self.sectiondata), num_sectionpts, 3))
-        for i,section in enumerate(self.section_chords):
-            r = linspace(0,1,num_sectionpts).reshape(num_sectionpts,1)
-            ret[i,:,:] = section[0,:] + numpy.dot(r,(section[1,:]-section[0,:]).reshape(1,3))
+        for i, section in enumerate(self.section_chords):
+            r = linspace(0, 1, num_sectionpts).reshape(num_sectionpts, 1)
+            ret[i, :, :] = section[0, :] + numpy.dot(r, (section[1, :] - section[0, :]).reshape(1, 3))
         return ret
     
     traits_view = View()
@@ -150,12 +181,20 @@ class GeometryViewer(HasTraits):
     transverse = Range(0, 30, 11)
     scene = Instance(MlabSceneModel, ())
     geometry = Instance(Geometry)
-    surfaces = Property(List(Instance(SurfaceViewer)), depends_on='geometry')
+    bodies = Property(List(Instance(BodyViewer)), depends_on='geometry.bodies[]')
+    surfaces = Property(List(Instance(SurfaceViewer)), depends_on='geometry.surfaces[]')
     @cached_property
     def _get_surfaces(self):
         ret = []
         for surface in self.geometry.surfaces:
             ret.append(SurfaceViewer(surface=surface))
+        return ret
+    
+    @cached_property
+    def _get_bodies(self):
+        ret = []
+        for body in self.geometry.bodies:
+            ret.append(BodyViewer(body=body))
         return ret
     
     def section_points(self, sections, yduplicate):
@@ -173,7 +212,7 @@ class GeometryViewer(HasTraits):
                 pt2[:, 1] = yduplicate - pt2[:, 1]
                 ret2.append(pt2[0, :])
                 ret2.append(pt2[1, :])
-        print ret.shape, len(ret2)
+        #print ret.shape, len(ret2)
         if len(ret2) > 0:
             ret = numpy.concatenate((ret, numpy.array(ret2)))
         return ret
@@ -205,12 +244,31 @@ class GeometryViewer(HasTraits):
         self.plots = []
         #self.plot.mlab_source.set(x=x, y=y, z=z, scalars=t)
         self.scene.mlab.clf()
+        # plot the axes
+        
         for surface in self.surfaces:
             section_pts = surface.sectiondata
-            for i,section_pt in enumerate(section_pts):
-                self.plots.append(self.scene.mlab.plot3d(section_pt[:, 0], section_pt[:, 1], section_pt[:, 2]))
-            self.plots.append(self.scene.mlab.mesh(surface.surfacedata[:,:,0], surface.surfacedata[:,:,1], surface.surfacedata[:,:,2]))
-        print 'numplots = ', len(self.plots)
+            for i, section_pt in enumerate(section_pts):
+                if len(section_pt)==2:
+                    #tube_radius = 0.02 * abs(section_pt[-1,0]-section_pt[0,0])
+                    tube_radius = None
+                else:
+                    tube_radius = None
+                self.plots.append(self.scene.mlab.plot3d(section_pt[:, 0], section_pt[:, 1], section_pt[:, 2], tube_radius=tube_radius))
+            self.plots.append(self.scene.mlab.mesh(surface.surfacedata[:, :, 0], surface.surfacedata[:, :, 1], surface.surfacedata[:, :, 2]))
+        for body in self.bodies:
+            width = (body.data_props[2]-body.data_props[1])/body.num_pts * 0.15
+            for data in body.bodydata:
+                c = numpy.empty((2,3))
+                c[:] = data[:3]
+                c[0,0] -= width/2
+                c[1,0] += width/2
+                #print c, width
+                self.plots.append(self.scene.mlab.plot3d(c[:,0], c[:, 1], c[:, 2], tube_radius=data[3], tube_sides=24))
+                if numpy.isfinite(body.body.yduplicate):
+                    c[:,1] = body.body.yduplicate - c[:,1]
+                    self.plots.append(self.scene.mlab.plot3d(c[:,0], c[:, 1], c[:, 2], tube_radius=data[3], tube_sides=24))
+        #print 'numplots = ', len(self.plots)
     
     #@on_trait_change('geometry')
     def update_plot_old(self):
@@ -233,17 +291,17 @@ class GeometryViewer(HasTraits):
 
 if __name__ == '__main__':
     from pyavl.case import Case
-    file = open('/opt/idearesearch/avl/runs/allegro.avl')
+    file = open('/opt/idearesearch/avl/runs/ow.avl')
     case = Case.case_from_input_file(file)
     g = GeometryViewer(geometry=case.geometry)
-    #print g.surfaces[2].sectiondata
     g.configure_traits()
-    #sections = case.geometry.surfaces[2].sections
+    #print g.surfaces[2].sectiondata
+    sections = case.geometry.surfaces[2].sections
     section = None
     for s in sections:
         if s.type == 'airfoil data file':
             section = s
             break
-    print section, [s.data for s in sections]
+    #print section, [s.data for s in sections]
     SectionViewer(section=section).configure_traits()
 
