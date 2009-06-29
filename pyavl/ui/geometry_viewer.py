@@ -5,9 +5,9 @@ Created on Jun 15, 2009
 '''
 
 import numpy
-from pyavl.geometry import Geometry, SectionData, Section
+from pyavl.geometry import Geometry, SectionData, Section, Surface
 
-from enthought.traits.api import HasTraits, Range, Instance, on_trait_change, Array, Property
+from enthought.traits.api import HasTraits, Range, Instance, on_trait_change, Array, Property, cached_property, List
 from enthought.traits.ui.api import View, Item, Group
 from enthought.tvtk.pyface.scene_editor import SceneEditor
 from enthought.mayavi.tools.mlab_scene_model import MlabSceneModel
@@ -32,16 +32,16 @@ class SectionViewer(HasTraits):
     pointsx = Property(Array, depends_on='section.data')
     @on_trait_change('data')
     def _get_pointsx(self):
-        return self.data[:,0]
+        return self.data[:, 0]
     
     pointsy = Property(Array, depends_on='section.data')
     @on_trait_change('data')
     def _get_pointsy(self):
-        return self.data[:,1]
+        return self.data[:, 1]
     
     def __init__(self, *l, **kw):
         HasTraits.__init__(self, *l, **kw)
-        plotdata = ArrayPlotData(x = self.pointsx, y = self.pointsy)
+        plotdata = ArrayPlotData(x=self.pointsx, y=self.pointsy)
         plot = Plot(plotdata)
         plot.plot(("x", "y"))
         
@@ -56,36 +56,93 @@ class SectionViewer(HasTraits):
         self.plot = plot
     
     view = View(Item('plot', editor=ComponentEditor(),
-                        show_label       = False,
-                        resizable        = True,),
-                resizable = True
+                        show_label=False,
+                        resizable=True,),
+                resizable=True
             )
+
+class SurfaceViewer(HasTraits):
+    # sorted by span y coordinate
+    surface = Instance(Surface)
+    # min 2 points in a section
+    # array : section : point : xyz
+    sectiondata = Property(Array(dtype=numpy.float, shape=(None,(2, None), 3)), depends_on='surface')
+    @cached_property
+    def _get_sectiondata(self):
+        ret = []
+        for section in self.surface.sections:
+            # FIXME: Assumption: section data is from x=0 to x=1
+            dataxz = section.data.get_data_points()
+            data = numpy.empty((dataxz.shape[0], 3))
+            data[:, 0] = dataxz[:, 0]
+            data[:, 1] = 0
+            data[:, 2] = dataxz[:, 1]
+            # scale
+            data *= section.chord
+            # rotate by the angle = section+surface angle
+            angle = section.angle + self.surface.angle
+            c, s = numpy.cos(angle * numpy.pi / 180), numpy.sin(angle * numpy.pi / 180)
+            data[:, 0] *= c
+            data[:, 0] += data[:, 2] * s
+            data[:, 2] *= c
+            data[:, 2] -= data[:, 0] * s
+            # translate to the leading edge
+            data += section.leading_edge
+            ret.append(data)
+            if numpy.isfinite(self.surface.yduplicate):
+                #print 'ydup'
+                data2 = numpy.empty(shape=data.shape)
+                data2[:,0] = data[:,0]
+                data2[:,2] = data[:,2]
+                data2[:,1] = self.surface.yduplicate - data[:,1]
+                #print data[:,1], data2[:,1]
+                ret.append(data2)
+        out = numpy.array(ret)
+        # sort by y position of the section
+        out = out[numpy.argsort(out[:,0,1])]
+        # surface transforms
+        #print('Scale : %s' %str(self.surface.scale))
+        #assert all(self.surface.scale > 0)
+        out *= self.surface.scale
+        out += self.surface.translate
+        # angle rotation done for each section separately
+        return out
+    
+    traits_view = View()
 
 class GeometryViewer(HasTraits):
     meridional = Range(1, 30, 6)
     transverse = Range(0, 30, 11)
     scene = Instance(MlabSceneModel, ())
     geometry = Instance(Geometry)
+    surfaces = Property(List(Instance(SurfaceViewer)), depends_on='geometry')
+    @cached_property
+    def _get_surfaces(self):
+        ret = []
+        for surface in self.geometry.surfaces:
+            ret.append(SurfaceViewer(surface=surface))
+        return ret
     
     def section_points(self, sections, yduplicate):
         # TODO: sort the array
-        ret = numpy.empty((len(sections*2),3))
+        ret = numpy.empty((len(sections * 2), 3))
         ret2 = []
-        for sno,section in enumerate(sections):
-            pno = sno*2
-            pt = ret[pno:pno+2,:]
+        for sno, section in enumerate(sections):
+            pno = sno * 2
+            pt = ret[pno:pno + 2, :]
             pt[0, :] = section.leading_edge
             pt[1, :] = section.leading_edge
             pt[1, 0] += section.chord * numpy.cos(section.angle * numpy.pi / 180)
             pt[1, 2] -= section.chord * numpy.sin(section.angle * numpy.pi / 180)
             if yduplicate is not numpy.nan:
                 pt2 = numpy.copy(pt)
-                pt2[:,1] = yduplicate - pt2[:,1]
-                ret2.append(pt2[0,:])
-                ret2.append(pt2[1,:])
+                pt2[:, 1] = yduplicate - pt2[:, 1]
+                ret2.append(pt2[0, :])
+                ret2.append(pt2[1, :])
         print ret.shape, len(ret2)
         if len(ret2) > 0:
-            ret = numpy.concatenate((ret,numpy.array(ret2)))
+            ret = numpy.concatenate((ret, numpy.array(ret2)))
+        print ret
         return ret
     
     def section_points_old(self, sections, yduplicate):
@@ -101,7 +158,7 @@ class GeometryViewer(HasTraits):
             if yduplicate is not numpy.nan:
                 print 'ydup'
                 pt2 = numpy.copy(pt)
-                pt2[:,1] = yduplicate - pt2[:,1]
+                pt2[:, 1] = yduplicate - pt2[:, 1]
                 ret.append(pt2)
         ret = numpy.concatenate(ret)
         return ret
@@ -111,17 +168,28 @@ class GeometryViewer(HasTraits):
         HasTraits.__init__(self, **args)
         #self.plot = self.scene.mlab.plot3d(x, y, z, t, colormap='Spectral')
         self.update_plot()
-    
-    @on_trait_change('geometry')
+
+    @on_trait_change('surfaces')
     def update_plot(self):
+        self.plots = []
+        #self.plot.mlab_source.set(x=x, y=y, z=z, scalars=t)
+        self.scene.mlab.clf()
+        for surface in self.surfaces:
+            section_pts = surface.sectiondata
+            for i in xrange(0, section_pts.shape[0]):
+                self.plots.append(self.scene.mlab.plot3d(section_pts[i, :, 0], section_pts[i, :, 1], section_pts[i, :, 2]))
+        print 'numplots = ', len(self.plots)
+    
+    #@on_trait_change('geometry')
+    def update_plot_old(self):
         self.plots = []
         #self.plot.mlab_source.set(x=x, y=y, z=z, scalars=t)
         self.scene.mlab.clf()
         for surface in self.geometry.surfaces:
             yduplicate = surface.yduplicate
             section_pts = self.section_points(surface.sections, yduplicate)
-            for i in xrange(0,section_pts.shape[0],2):
-                self.plots.append(self.scene.mlab.plot3d(section_pts[i:i+2, 0], section_pts[i:i+2, 1], section_pts[i:i+2, 2], tube_radius=0.1))
+            for i in xrange(0, section_pts.shape[0], 2):
+                self.plots.append(self.scene.mlab.plot3d(section_pts[i:i + 2, 0], section_pts[i:i + 2, 1], section_pts[i:i + 2, 2], tube_radius=0.1))
         print 'numplots = ', len(self.plots)
 
     # the layout of the dialog created
@@ -133,9 +201,10 @@ class GeometryViewer(HasTraits):
 
 if __name__ == '__main__':
     from pyavl.case import Case
-    file = open('/opt/idearesearch/avl/runs/ow.avl')
+    file = open('/opt/idearesearch/avl/runs/allegro.avl')
     case = Case.case_from_input_file(file)
     g = GeometryViewer(geometry=case.geometry)
+    print g.surfaces[2].sectiondata
     g.configure_traits()
     sections = case.geometry.surfaces[2].sections
     section = None

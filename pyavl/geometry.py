@@ -219,7 +219,7 @@ class Body(HasTraits):
     lsources = List
     filename = File
     yduplicate = Float
-    scale = Array(numpy.float, (3,))
+    scale = Array(numpy.float, (3,), numpy.ones((3,)))
     translate = Array(numpy.float, (3,))
     
     def write_to_file(self, file):
@@ -273,7 +273,7 @@ class Surface(HasTraits):
     svortices = List(value=[0,1.0], minlen=2, maxlen=2)
     index = Int
     yduplicate = Float(numpy.nan)
-    scale = Array(numpy.float, (3,))
+    scale = Array(numpy.float, (3,), numpy.ones((3,)))
     translate = Array(numpy.float, (3,))
     angle = Float
     sections = List(Section,[])
