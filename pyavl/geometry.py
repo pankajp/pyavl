@@ -5,7 +5,8 @@ Created on Jun 9, 2009
 '''
 
 import numpy
-from enthought.traits.api import HasTraits, List, Str, Float, Range, Int, Dict, File, Trait, Instance, Enum, Array
+from enthought.traits.api import HasTraits, List, Str, Float, Range, Int, Dict,\
+        File, Trait, Instance, Enum, Array, cached_property, Property, String
 from enthought.traits.ui.api import View, Item, Group, ListEditor
 from pyavl.utils.naca4_plotter import get_NACA4_data
 
@@ -341,6 +342,17 @@ class Geometry(HasTraits):
                        scrollable=True,
                        resizable=True
                     )
+    
+    controls = Property(List(String), depends_on='surfaces')
+    @cached_property
+    def _get_controls(self):
+        ret = set([])
+        for surface in self.surfaces:
+            for section in surface:
+                for control in section.controls:
+                    ret.add(control.name)
+        return ret
+        
     
     def write_to_file(self, file):
         file.write('# SURFACES\n')

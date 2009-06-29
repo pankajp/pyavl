@@ -6,23 +6,24 @@ Created on Jun 8, 2009
 
 import pexpect
 import os
-from enthought.traits.api import HasTraits, List, Float, Dict, String, Int, Tuple, Enum, cached_property, Python, Property, on_trait_change, Complex, Array
+from enthought.traits.api import HasTraits, List, Float, Dict, String, Int, Tuple, Enum, cached_property, Python, Property, on_trait_change, Complex, Array, Instance
 from enthought.traits.ui.api import EnumEditor
 import re
 import numpy
+from pyavl.case import Case
 #from pyavl.runcase import RunCase
 
     
 class EigenMode(HasTraits):
     eigenvalue = Complex()
     # the = theta
-    order = List(String, ['u','w','q','the','v','p','r','phi','x','y','z','psi'])
+    order = List(String, ['u', 'w', 'q', 'the', 'v', 'p', 'r', 'phi', 'x', 'y', 'z', 'psi'])
     eigenvector = Array(numpy.complex, shape=(12,))
 
 class EigenMatrix(HasTraits):
     # include the control vector
-    matrix = Array(numpy.float, shape=(12,(12,None)))
-    order = List(String, ['u','w','q','the','v','p','r','phi','x','y','z','psi'])
+    matrix = Array(numpy.float, shape=(12, (12, None)))
+    order = List(String, ['u', 'w', 'q', 'the', 'v', 'p', 'r', 'phi', 'x', 'y', 'z', 'psi'])
 
 
 class RunCase(HasTraits):
@@ -45,18 +46,21 @@ class RunCase(HasTraits):
     # name:(cmd,pattern,unit)
     parameters_info = Dict(String, Tuple(String, String, String), {})
     
+    # TODO: fixit
     # name:pattern
-    constrained_params = Property(Dict(String, String), depends_on='constrained_patterns')
+    #constrained_params = Property(Dict(String, String), depends_on='constrained_patterns')
     @cached_property
     def _get_constrained_params(self):
         return self.constrained_patterns.keys()
     
+    # name:pattern
     constrained_patterns = Dict(String, String, {'alpha':'lpha', 'beta':'eta',
                             'roll rate':'oll  rate', 'pitch rate':'itch rate',
                             'yaw rate':'aw   rate'})
     # auto-detect cmd from patterns
     #constrained_cmd = Dict(String, String, {'alpha':'A', 'beta':'B', 'roll rate':'R',
     #                        'pitch rate':'P', 'yaw rate':'Y'})
+    # name:cmd
     constrained_cmd = Property(Dict, depends_on='constrained_patterns')
     @cached_property
     def _get_constrained_cmd(self):
@@ -79,8 +83,9 @@ class RunCase(HasTraits):
         AVL.goto_state(self.avl)
         return cmds
     
+    # TODO: fixit
     # name:pattern
-    constraint_vars = Property(Dict(String, String), depends_on='constraint_patterns')
+    #constraint_vars = Property(Dict(String, String), depends_on='constraint_patterns')
     @cached_property
     def _get_constraint_vars(self):
         return self.constraint_patterns.keys()
@@ -88,6 +93,7 @@ class RunCase(HasTraits):
                             'roll rate':'pb/2V', 'yaw rate':'rb/2V', 'pitch rate':'qc/2V',
                             'lift coeff':'CL', 'side force coeff':'CY', 'roll coeff':'Cl roll mom',
                             'pitch coeff':'Cm pitchmom', 'yaw coeff':'Cn yaw  mom'})
+    # constraint:cmd
     constraint_cmd = Property(Dict, depends_on='constraint_patterns')
     @cached_property
     def _get_constraint_cmd(self):
@@ -97,7 +103,7 @@ class RunCase(HasTraits):
         self.avl.expect(AVL.patterns['/oper'])
         self.avl.sendline('a')
         self.avl.expect(AVL.patterns['/oper/a'])
-        lines = avl.before.readlines()
+        lines = self.avl.before.splitlines()
         lines = [line.strip() for line in lines]
         i1 = lines.index('- - - - - - - - - - - - - - - - -')
         i2 = lines.index('', i1 + 1)
@@ -113,23 +119,23 @@ class RunCase(HasTraits):
         return cmds
     
     # constraints are corresponding to to the params in constraint_params
-    # constrained, constraint_in, value
-    constraints = List(Tuple(String, String, Float),
-                                [('alpha', 'alpha', 0.0),
-                                ('beta', 'beta', 0.0),
-                                ('roll rate', 'roll rate', 0.0),
-                                ('yaw rate', 'yaw rate', 0.0),
-                                ('pitch rate', 'pitch rate', 0.0),
-                            ])
+    # constrained : constraint_name, value
+    constraints = Dict(String, Tuple(String, Float),
+                                {'alpha': ('alpha', 0.0),
+                                 'beta': ('beta', 0.0),
+                                 'roll rate': ('roll rate', 0.0),
+                                 'yaw rate': ('yaw rate', 0.0),
+                                 'pitch rate': ('pitch rate', 0.0)}
+                        )
     
     @on_trait_change('constraints[]')
     def update_constraints(self):
         print 'constraints changed'
         self.avl.sendline('oper')
-        for p, c, v in self.constraints:
+        for p, c in self.constraints.iteritems():
             p1 = self.constraint_cmd[p]
-            c1 = self.constrained_cmd[c]
-            self.avl.sendline('%s %s %f' % (p1, c1, v))
+            c1 = self.constrained_cmd[c[0]]
+            self.avl.sendline('%s %s %f' % (p1, c1, c[1]))
             self.avl.expect(AVL.patterns['/oper'])
         AVL.goto_state(self.avl)
     
@@ -138,7 +144,7 @@ class RunCase(HasTraits):
         self.avl.sendline('oper')
         self.avl.sendline('m')
         self.avl.expect(AVL.patterns['/oper/m'])
-        self.avl.sendline('V %f' %max(self.parameters['velocity'],0.001))
+        self.avl.sendline('V %f' % max(self.parameters['velocity'], 0.001))
         for p, v in self.parameters.iteritems():
             cmd = self.parameters_info[p][0]
             if cmd != 'V':
@@ -238,6 +244,7 @@ class RunCase(HasTraits):
         for match in re.finditer(RunCase.patterns['var'], text):
             ret[match.group('name')] = float(match.group('value'))
         self.output = ret
+        self.avl.sendline()
         return ret
     
     def get_modes(self):
@@ -251,19 +258,45 @@ class RunCase(HasTraits):
         ret = {}
         i1 = re.search(r"""Run case\s*?\d+?:.*?\n""", self.avl.before).end()
         i2 = re.search(r"""Run-case parameters for eigenmode analyses""", self.avl.before[i1:]).start()
-        text = self.avl.before[i1 : i1+i2]
+        text = self.avl.before[i1 : i1 + i2]
         modes = []
         for mode_eval in re.finditer(RunCase.patterns['mode'], text):
-            eigenvalue = float(mode_eval.group('real')) + 1j*float(mode_eval.group('imag'))
+            eigenvalue = float(mode_eval.group('real')) + 1j * float(mode_eval.group('imag'))
             mode = EigenMode(eigenvalue=eigenvalue)
             i = 0
-            for match in re.finditer(RunCase.patterns['modeveccomp'], ' '.join(text[i+1:i+4])):
+            for match in re.finditer(RunCase.patterns['modeveccomp'], ' '.join(text[i + 1:i + 4])):
                 i += 1
-                mode.eigenvector[mode.order.index[match.groups('name')]] = float(mode_eval.groups('real')) + 1j*float(mode_eval.groups('imag'))
+                mode.eigenvector[mode.order.index[match.groups('name')]] = float(mode_eval.groups('real')) + 1j * float(mode_eval.groups('imag'))
                 if i > 11:
                     break
             modes.append(mode)
         return modes
+    
+    def get_system_matrix(self):
+        self.avl.sendline('mode')
+        self.avl.expect(AVL.patterns['/mode'])
+        self.avl.sendline('n')
+        self.avl.expect(AVL.patterns['/mode'])
+        self.avl.sendline('s')
+        self.avl.expect(AVL.patterns['/mode/s'])
+        lines = [line for line in self.avl.before.splitlines()[3: - 1] if len(line) > 0]
+        lines = [line.replace('**********', '      nan ') for line in lines]
+        #print lines
+        # fortran format to deceode
+        # FORMAT(1X,12F10.4,3X,12G12.4)
+        # 1 space, 12 floats of fixed width 10, 3 spaces 12 exponents of fixed width 12
+        order = lines[0].replace('|',' ').split()
+        mat = numpy.empty((12,len(order)))
+        for i, line in enumerate(lines[1:]):
+            l1 = line[1:121]
+            for j in xrange(12):
+                mat[i, j] = float(l1[j * 10:(j + 1) * 10])
+            l2 = line[124:]
+            for j in xrange(len(l2)/12):
+                mat[i,12+j] = float(l2[j * 12:(j + 1) * 12])
+        ret = EigenMatrix(order=order, matrix=mat)
+        AVL.goto_state(self.avl)
+        return ret
     
 class AVL(HasTraits):
     '''
@@ -275,24 +308,27 @@ class AVL(HasTraits):
                 '/oper/a': re.compile(r"""Select new  constraint,value  for (?P<param>.*?)\s+c>  """),
                 '/oper/m': r'Enter parameter, value  \(or  # - \+ N \)   c>  ',
                 '/mode' : r'\.MODE   c>  ',
+                '/mode/s': r'Enter output filename \(or <Return>\):',
                 'num'   : r'(?P<val>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)'
                 }
     run_cases = List(RunCase, [])
     state = String('/')
-    selected_case = Int(1)
+    selected_runcase = Int(1)
+    case = Instance(Case)
     
-    def _selected_case_chandeg(self):
+    def _selected_case_changed(self):
         self.avl.sendline('oper')
         self.avl.sendline(str(self.selected_case))
         self.avl.sendline()
     
-    def __init__(self, path='', logfile='/opt/idearesearch/avllog'):
+    def __init__(self, path='', cwd=None, logfile='/opt/idearesearch/avllog'):
         '''
         Constructor
         path is the directory where avl binary is found
+        cwd is the working dir, where all the case related files are expected to be found (eg airfoil files)
         logfile is where all output is to be logged
         '''
-        self.avl = pexpect.spawn(os.path.join(path, 'avl'), logfile=open(logfile, 'w'))
+        self.avl = pexpect.spawn(os.path.join(path, 'avl'), logfile=open(logfile, 'w'), cwd=cwd)
         self.disable_plotting()
         
     def execute_case(self, case_num=None):
@@ -304,6 +340,7 @@ class AVL(HasTraits):
         self.avl.sendline(str(case_num))
         self.avl.expect(AVL.patterns['/oper'])
         self.avl.sendline('x')
+        self.avl.sendline()
         
         
     def disable_plotting(self):

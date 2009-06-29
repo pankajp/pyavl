@@ -10,8 +10,8 @@ class Test(unittest.TestCase):
 
 
     def setUp(self):
-        self.avl = avl.AVL()
-
+        self.avl = avl.AVL(cwd='/opt/idearesearch/avl/runs/')
+        self.filename = '/opt/idearesearch/avl/runs/allegro.avl'
 
     def tearDown(self):
         self.avl.avl.close(True)
@@ -20,46 +20,55 @@ class Test(unittest.TestCase):
     def test_init(self):
         index = self.avl.avl.expect(self.avl.patterns['/'])
         if index == 0:
-            print self.avl.avl.before
+            #print self.avl.avl.before
+            pass
         else:
-            print index
+            #print index
+            pass
             
     def test_load_case(self):
-        filename = '/opt/idearesearch/avl/runs/vanilla.avl'
-        self.avl.load_case_from_file(filename)
+        self.avl.load_case_from_file(self.filename)
         
             
     def test_runcase_init(self):
-        filename = '/opt/idearesearch/avl/runs/vanilla.avl'
-        self.avl.load_case_from_file(filename)
+        self.avl.load_case_from_file(self.filename)
         runcase = avl.RunCase.get_case_from_avl(self.avl.avl, 1)
         assert runcase is not None
         
     def test_avl_ui(self):
-        filename = '/opt/idearesearch/avl/runs/vanilla.avl'
-        self.avl.load_case_from_file(filename)
+        self.avl.load_case_from_file(self.filename)
         #self.avl.configure_traits()
     
     def test_param_modify(self):
-        filename = '/opt/idearesearch/avl/runs/vanilla.avl'
-        self.avl.load_case_from_file(filename)
+        self.avl.load_case_from_file(self.filename)
         rc = self.avl.run_cases[0]
         p = rc.parameters_info['bank']
         rc.parameters['bank'] = 2.2
         assert 'bank' in rc.parameters
         assert rc.parameters['bank'] == 2.2
+    
+    def test_constraint_modify(self):
+        self.avl.load_case_from_file(self.filename)
+        rc = self.avl.run_cases[0]
+        c = rc.constraints
+        print c
+        c['alpha'] = ('alpha', 1.1)
+        assert c['alpha'] == ('alpha', 1.1)
+        #p = rc.parameters_info['bank']
+        #rc.parameters['bank'] = 2.2
+        #assert 'bank' in rc.parameters
+        #assert rc.parameters['bank'] == 2.2
+    
         
     def test_runcase_output(self):
-        filename = '/opt/idearesearch/avl/runs/vanilla.avl'
-        self.avl.load_case_from_file(filename)
+        self.avl.load_case_from_file(self.filename)
         rc = self.avl.run_cases[0]
         out = rc.get_run_output()
         print out
         print len(out)
         
     def test_eigenmode_output(self):
-        filename = '/opt/idearesearch/avl/runs/vanilla.avl'
-        self.avl.load_case_from_file(filename)
+        self.avl.load_case_from_file(self.filename)
         rc = self.avl.run_cases[0]
         print rc.parameters.keys()
         rc.parameters['velocity'] = 100.0
@@ -67,7 +76,19 @@ class Test(unittest.TestCase):
         out = rc.get_modes()
         print [o.eigenvalue for o in out]
         print 'num modes:', len(out)
-        assert len(out) == 8
+        #assert len(out) == 8
+    
+    def test_system_matrix(self):
+        self.avl.load_case_from_file(self.filename)
+        rc = self.avl.run_cases[0]
+        print rc.parameters.keys()
+        rc.parameters['velocity'] = 100.0
+        print rc.parameters['velocity']
+        out = rc.get_system_matrix()
+        print out
+        print out.matrix
+        print 'matrix shape', out.matrix.shape
+    
         
 
 if __name__ == "__main__":

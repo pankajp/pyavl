@@ -5,7 +5,7 @@ Created on Jun 8, 2009
 '''
 
 import numpy
-from enthought.traits.api import HasTraits, List, Str, Float, Range, Int, Dict, File, Trait, Instance, Enum, Array
+from enthought.traits.api import HasTraits, List, Str, Float, Range, Int, Dict, File, Trait, Instance, Enum, Array, DelegatesTo
 from geometry import Geometry
 
 def filter_lines(lines):
@@ -35,6 +35,7 @@ class Case(HasTraits):
     ref_cg = Array(numpy.float, (3,))
     CD_p = Float
     geometry = Instance(Geometry)
+    controls = DelegatesTo('geometry')
     
     def write_input_file(self, file):
         '''
