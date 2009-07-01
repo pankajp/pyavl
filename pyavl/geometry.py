@@ -8,6 +8,7 @@ import numpy
 from enthought.traits.api import HasTraits, List, Str, Float, Range, Int, Dict,\
         File, Trait, Instance, Enum, Array, cached_property, Property, String
 from enthought.traits.ui.api import View, Item, Group, ListEditor
+from enthought.traits.ui.value_tree import TraitsNode
 from pyavl.utils.naca4_plotter import get_NACA4_data
 
 def is_sequence(obj):
@@ -336,13 +337,19 @@ class Surface(HasTraits):
         return surface, lineno
 
 
-class Geometry(HasTraits):
+class Geometry(TraitsNode):
     '''
     A class representing the geometry for a case in avl
     '''
     
     surfaces = List(Surface,[])
     bodies = List(Body,[])
+    
+    # for tree view
+    things = Property(List, depends_on='surfaces,geometries')
+    @cached_property
+    def _get_things(self):
+        return [self.surfaces, self.bodies]
     
     traits_view = View(Item('surfaces', editor=ListEditor(style='custom')),
                        Item('bodies', editor=ListEditor(style='custom')),
@@ -355,10 +362,10 @@ class Geometry(HasTraits):
     def _get_controls(self):
         ret = set([])
         for surface in self.surfaces:
-            for section in surface:
+            for section in surface.sections:
                 for control in section.controls:
                     ret.add(control.name)
-        return ret
+        return list(ret)
         
     
     def write_to_file(self, file):

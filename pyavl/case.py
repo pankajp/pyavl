@@ -5,7 +5,8 @@ Created on Jun 8, 2009
 '''
 
 import numpy
-from enthought.traits.api import HasTraits, List, Str, Float, Range, Int, Dict, File, Trait, Instance, Enum, Array, DelegatesTo
+from enthought.traits.api import HasTraits, List, Str, Float, Range, Int, Dict, File,\
+    Trait, Instance, Enum, Array, DelegatesTo, cached_property, Property
 from geometry import Geometry
 
 def filter_lines(lines):
@@ -35,6 +36,11 @@ class Case(HasTraits):
     ref_cg = Array(numpy.float, (3,))
     CD_p = Float
     geometry = Instance(Geometry)
+    # for the tree view
+    geometries = Property(List(Geometry), depends_on='geometry')
+    @cached_property
+    def _get_geometries(self):
+        return [self.geometry] if self.geometry is not None else []
     controls = DelegatesTo('geometry')
     
     def write_input_file(self, file):

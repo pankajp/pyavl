@@ -5,17 +5,21 @@ Created on Jun 15, 2009
 '''
 
 import numpy
+from itertools import chain
+
 from pyavl.geometry import Geometry, SectionData, Section, Surface, Body
+from pyavl.utils.traitstools import CustomSaveTool
 
 from enthought.traits.api import HasTraits, Range, Instance, on_trait_change, Array, Property, cached_property, List, Int, Tuple, Float
 from enthought.traits.ui.api import View, Item, Group
 from enthought.tvtk.pyface.scene_editor import SceneEditor
 from enthought.mayavi.tools.mlab_scene_model import MlabSceneModel
 from enthought.mayavi.core.ui.mayavi_scene import MayaviScene
-from enthought.chaco.api import ArrayPlotData, Plot, create_line_plot, ScatterPlot
+from enthought.chaco.api import ArrayPlotData, Plot, create_line_plot, ScatterPlot, DataRange2D
 from enthought.enable.component_editor import ComponentEditor
 from enthought.chaco.chaco_plot_editor import ChacoPlotItem
-from enthought.chaco.tools.api import PanTool, ZoomTool
+from enthought.chaco.tools.api import PanTool, ZoomTool, DragZoom, TraitsTool, SaveTool
+
 
 from numpy import linspace, pi, cos, sin
 
@@ -44,16 +48,34 @@ class SectionViewer(HasTraits):
         HasTraits.__init__(self, *l, **kw)
         plotdata = ArrayPlotData(x=self.pointsx, y=self.pointsy)
         plot = Plot(plotdata)
-        plot.plot(("x", "y"))
+        renderer = plot.plot(("x", "y"))
         
         #lineplot = create_line_plot((self.pointsx,self.pointsy), width=2.0)
         #lineplot.tools.append(PanTool(lineplot, drag_button='middle'))
         #lineplot.tools.append(ZoomTool(lineplot, tool_mode='box'))
-        plot.tools.append(PanTool(plot, drag_button='middle'))
-        plot.tools.append(ZoomTool(plot, tool_mode='range', axis='value'))
+        plot.tools.append(PanTool(plot, drag_button='left'))
+        plot.tools.append(ZoomTool(plot, tool_mode='box'))
+        plot.tools.append(DragZoom(plot, tool_mode='box', drag_button='right'))
+        plot.tools.append(CustomSaveTool(plot, filename='/home/pankaj/Desktop/file.png'))
+        #plot.tools.append(PlotToolbar(plot))
+        plot.tools.append(TraitsTool(plot))
         #plot.tools.append(ZoomTool(plot, tool_mode='box', axis='index', drag_button='right', always_on=True))
-        plot.aspect_ratio = 3
+        #plot.aspect_ratio = 3
         #plot.request_redraw()
+        #print plot.bounds
+        #plot.aspect_ratio = 1
+        #plot.bounds = [500,300]
+        #print plot.bounds
+        #plot.range2d = DataRange2D(low=(0,-.5), high=(1,0.5))
+        #print plot.bounds
+        for renderer in chain(*plot.plots.values()):
+            renderer.index_mapper.stretch_data = False
+            renderer.value_mapper.stretch_data = False
+            
+            renderer.index_mapper.range.low = 0
+            renderer.index_mapper.range.high = 1
+            renderer.value_mapper.range.low = -3/8.
+            renderer.value_mapper.range.high = 3/8.
         self.plot = plot
     
     view = View(Item('plot', editor=ComponentEditor(),
@@ -303,5 +325,6 @@ if __name__ == '__main__':
             section = s
             break
     #print section, [s.data for s in sections]
-    SectionViewer(section=section).configure_traits()
+    sv = SectionViewer(section=sections[0])
+    sv.configure_traits()
 

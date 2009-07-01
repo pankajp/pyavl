@@ -27,7 +27,8 @@ class EigenMatrix(HasTraits):
 
 
 class RunCase(HasTraits):
-    patterns = {'constrained':re.compile(r"""(?P<cmd>[A-Z0-9]+)\s+(?P<pattern>.+?)\s+->\s+(?P<constraint>\S+)\s+=\s+(?P<val>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)"""),
+    patterns = {'name':re.compile(r"""Operation of run case (?P<case_num>\d+)/(?P<num_cases>\d+):\s*(?P<case_name>.+?)\ *?\n"""),
+                'constrained':re.compile(r"""(?P<cmd>[A-Z0-9]+)\s+(?P<pattern>.+?)\s+->\s+(?P<constraint>\S+)\s+=\s+(?P<val>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)"""),
                 'constraint':re.compile(r"""(?P<sel>->)?\s*(?P<cmd>[A-Z0-9])+\s+(?P<pattern>.+?)\s+=\s+(?P<val>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)"""),
                 'parameter':re.compile(r"""(?P<cmd>[A-Z]+)\s+(?P<pattern>.+?)\s+=\s+(?P<val>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)(\ +(?P<unit>\S+))?"""),
                 'var':re.compile(r"""(?P<name>\S+?)\s*?=\s*?(?P<value>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)"""),
@@ -68,7 +69,7 @@ class RunCase(HasTraits):
         self.avl.expect(AVL.patterns['/oper'])
         self.avl.sendline(str(self.number))
         self.avl.expect(AVL.patterns['/oper'])
-        lines = avl.before.readlines()
+        lines = self.avl.before.readlines()
         lines = [line.strip() for line in lines]
         i1 = lines.index('------------      ------------------------')
         i2 = lines.index('------------      ------------------------', i1 + 1)
@@ -104,6 +105,8 @@ class RunCase(HasTraits):
         self.avl.sendline('a')
         self.avl.expect(AVL.patterns['/oper/a'])
         lines = self.avl.before.splitlines()
+        self.avl.sendline()
+        self.avl.expect(AVL.patterns['/oper'])
         lines = [line.strip() for line in lines]
         i1 = lines.index('- - - - - - - - - - - - - - - - -')
         i2 = lines.index('', i1 + 1)
@@ -132,9 +135,13 @@ class RunCase(HasTraits):
     def update_constraints(self):
         print 'constraints changed'
         self.avl.sendline('oper')
+        self.avl.sendline()
+        self.avl.expect(AVL.patterns['/'])
         for p, c in self.constraints.iteritems():
             p1 = self.constraint_cmd[p]
             c1 = self.constrained_cmd[c[0]]
+            self.avl.sendline('oper')
+            self.avl.expect(AVL.patterns['/oper'])
             self.avl.sendline('%s %s %f' % (p1, c1, c[1]))
             self.avl.expect(AVL.patterns['/oper'])
         AVL.goto_state(self.avl)
@@ -168,6 +175,7 @@ class RunCase(HasTraits):
         i2 = lines.index('', i1 + 1)
         constraint_lines = lines[i1 + 1:i2]
         params = [re.search(RunCase.patterns['constraint'], line).group('pattern') for line in constraint_lines]
+        avl.sendline()
         AVL.goto_state(avl)
         return params
     
@@ -191,10 +199,17 @@ class RunCase(HasTraits):
     
     @classmethod
     def get_case_from_avl(cls, avl, case_num):
-        # todo: parse constraints and parameters from avl
-        constrained_params = RunCase.get_constrained_params_from_avl(avl, case_num)
-        runcase = RunCase()
+        # TODO: parse constraints and parameters from avl
+        avl.sendline('oper')
+        avl.expect(AVL.patterns['/oper'])
+        avl.sendline(str(case_num))
+        avl.expect(AVL.patterns['/oper'])
+        match = re.search((RunCase.patterns['name']), avl.before)
+        name = match.group('case_name').strip()
+        AVL.goto_state(avl)
+        runcase = RunCase(name=name, case_num=case_num)
         runcase.avl = avl
+        constrained_params = RunCase.get_constrained_params_from_avl(avl, case_num)
         for constrained_param in constrained_params:
             if constrained_param not in runcase.constrained_patterns.values():
                 runcase.constrained_patterns[constrained_param] = constrained_param
@@ -203,6 +218,7 @@ class RunCase(HasTraits):
             if constraint_param not in runcase.constraint_patterns.values():
                 runcase.constraint_patterns[constraint_param] = constraint_param
         RunCase.get_parameters_info_from_avl(runcase, avl)
+        AVL.goto_state(avl)
         return runcase
         
     def get_parameters_info_from_avl(self, avl):
@@ -219,6 +235,7 @@ class RunCase(HasTraits):
         constraint_lines = lines[i1 + 1:i2]
         groups = [re.search(RunCase.patterns['parameter'], line).groupdict() for line in constraint_lines]
         params = {}
+        AVL.goto_state(avl)
         #params.update(self.parameters)
         for group in groups:
             pattern = group['pattern']
@@ -241,10 +258,11 @@ class RunCase(HasTraits):
         i1 = re.search(r"""Run case:\s*?.*?\n""", self.avl.before).end()
         i2 = re.search(r"""---------------------------------------------------------------""", self.avl.before[i1:]).start()
         text = self.avl.before[i1:i1 + i2]
+        AVL.goto_state(avl)
         for match in re.finditer(RunCase.patterns['var'], text):
             ret[match.group('name')] = float(match.group('value'))
         self.output = ret
-        self.avl.sendline()
+        AVL.goto_state(avl)
         return ret
     
     def get_modes(self):
@@ -254,6 +272,7 @@ class RunCase(HasTraits):
         self.avl.expect(AVL.patterns['/mode'])
         if re.search(r'Eigenmodes not computed for run case', self.avl.before):
             print 'Error : \n', self.avl.before
+            AVL.goto_state(avl)
             return
         ret = {}
         i1 = re.search(r"""Run case\s*?\d+?:.*?\n""", self.avl.before).end()
@@ -270,6 +289,7 @@ class RunCase(HasTraits):
                 if i > 11:
                     break
             modes.append(mode)
+        AVL.goto_state(avl)
         return modes
     
     def get_system_matrix(self):
@@ -285,15 +305,15 @@ class RunCase(HasTraits):
         # fortran format to deceode
         # FORMAT(1X,12F10.4,3X,12G12.4)
         # 1 space, 12 floats of fixed width 10, 3 spaces 12 exponents of fixed width 12
-        order = lines[0].replace('|',' ').split()
-        mat = numpy.empty((12,len(order)))
+        order = lines[0].replace('|', ' ').split()
+        mat = numpy.empty((12, len(order)))
         for i, line in enumerate(lines[1:]):
             l1 = line[1:121]
             for j in xrange(12):
                 mat[i, j] = float(l1[j * 10:(j + 1) * 10])
             l2 = line[124:]
-            for j in xrange(len(l2)/12):
-                mat[i,12+j] = float(l2[j * 12:(j + 1) * 12])
+            for j in xrange(len(l2) / 12):
+                mat[i, 12 + j] = float(l2[j * 12:(j + 1) * 12])
         ret = EigenMatrix(order=order, matrix=mat)
         AVL.goto_state(self.avl)
         return ret
@@ -319,7 +339,7 @@ class AVL(HasTraits):
     def _selected_case_changed(self):
         self.avl.sendline('oper')
         self.avl.sendline(str(self.selected_case))
-        self.avl.sendline()
+        AVL.goto_state(self.avl)
     
     def __init__(self, path='', cwd=None, logfile='/opt/idearesearch/avllog'):
         '''
@@ -329,6 +349,7 @@ class AVL(HasTraits):
         logfile is where all output is to be logged
         '''
         self.avl = pexpect.spawn(os.path.join(path, 'avl'), logfile=open(logfile, 'w'), cwd=cwd)
+        self.cwd = cwd
         self.disable_plotting()
         
     def execute_case(self, case_num=None):
@@ -340,14 +361,13 @@ class AVL(HasTraits):
         self.avl.sendline(str(case_num))
         self.avl.expect(AVL.patterns['/oper'])
         self.avl.sendline('x')
-        self.avl.sendline()
+        AVL.goto_state(self.avl)
         
         
     def disable_plotting(self):
         self.avl.sendline('plop')
         self.avl.sendline('g')
-        self.avl.sendline()
-        self.avl.expect(AVL.patterns['/'])
+        AVL.goto_state(self.avl)
     
     @classmethod
     def goto_state(cls, avl, state='/'):
@@ -375,6 +395,12 @@ class AVL(HasTraits):
     
     def load_case_from_file(self, filename):
         self.avl.sendline('load %s' % filename)
+        if os.path.isabs(filename):
+            f = open(filename)
+        else:
+            f = open(os.path.join([self.cwd, filename]))
+        self.case = Case.case_from_input_file(f)
+        f.close()
         AVL.goto_state(self.avl)
         self.populate_runcases()
-        
+    

@@ -21,7 +21,7 @@ from enthought.chaco.tools.api import PanTool, ZoomTool
 class AspectRatio(BaseFloat):
     "A new Trait for defining aspect ratios"
 
-    default_value = 1.0
+    default_value = 1.5
     
     info_text = "a nonzero floating point number"
 
@@ -36,7 +36,7 @@ class AspectRatio(BaseFloat):
 class MyPlot(HasTraits):
 
     plot = Any()
-    screen_enabled = Bool(False)
+    screen_enabled = Bool(True)
     screen_aspect = AspectRatio()
     fixed_x = Bool(False)
     fixed_y = Bool(False)
