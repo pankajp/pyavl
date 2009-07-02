@@ -17,12 +17,12 @@ from enthought.traits.api import List
 class AVLPerspective(Perspective):
     """ A perspective containing the default Lorenz views. """
     
-    name             = 'Lorenz'
+    name = 'PyAVL'
     show_editor_area = False
 
     contents = [
-        PerspectiveItem(id='lorenz.data'),
-        PerspectiveItem(id='lorenz.plot2d')
+        PerspectiveItem(id='pyavl.tree'),
+        #PerspectiveItem(id='lorenz.plot2d')
     ]
 
 
@@ -34,16 +34,16 @@ class AVLUIPlugin(Plugin):
     """
 
     # Extension points Ids.
-    PERSPECTIVES   = 'enthought.envisage.ui.workbench.perspectives'
-    VIEWS          = 'enthought.envisage.ui.workbench.views'
+    PERSPECTIVES = 'enthought.envisage.ui.workbench.perspectives'
+    VIEWS = 'enthought.envisage.ui.workbench.views'
 
     #### 'IPlugin' interface ##################################################
 
     # The plugin's unique identifier.
-    id = 'pyavl.ui.envisage.sample.ui'
+    id = 'pyavl.ui.envisage.ui'
 
     # The plugin's name (suitable for displaying to the user).
-    name = 'Lorenz UI'
+    name = 'PyAVL UI'
 
     #### Contributions to extension points made by this plugin ################
 
@@ -53,7 +53,7 @@ class AVLUIPlugin(Plugin):
     def _perspectives_default(self):
         """ Trait initializer. """
 
-        return [LorenzPerspective]
+        return [AVLPerspective]
 
     # Views.
     views = List(contributes_to=VIEWS)
@@ -61,39 +61,52 @@ class AVLUIPlugin(Plugin):
     def _views_default(self):
         """ Trait initializer. """
         
-        return [self._create_data_view, self._create_plot2d_view]
+        return [self._create_tree_view, self._create_geometry_view, self._create_section_view]#, self._create_plot2d_view]
 
     ###########################################################################
     # Private interface.
     ###########################################################################
 
-    def _create_data_view(self, **traits):
+    def _create_tree_view(self, **traits):
         """ Factory method for the data view. """
 
-        from pyavl.ui.envisage.sample.api import DataView, Lorenz
-
-        data_view = TraitsUIView(
-            id   = 'lorenz.data',
-            name = 'Data',
-            obj  = DataView(lorenz=self.application.get_service(Lorenz)),
+        from pyavl.ui.envisage.treepipeline import AVLTreeBrowser
+        from pyavl.ui.envisage.avl_tree_ui_view import AVLTreeUIView
+        #from pyavl.ui.envisage.treepipeline import AVLTreeBrowserView
+        obj = AVLTreeBrowser(avl=self.application.get_service('pyavl.avl.AVL'))
+        tree_view = AVLTreeUIView(
+            id='pyavl.tree',
+            name='Tree View',
+            view=obj.view,
+            obj=obj,
             **traits
         )
 
-        return data_view
+        return tree_view
     
-    def _create_plot2d_view(self, **traits):
-        """ Factory method for the plot2D view. """
-
-        from pyavl.ui.envisage.sample.api import Lorenz, Plot2DView
-
-        plot2d_view = TraitsUIView(
-            id   = 'lorenz.plot2d',
-            name = 'Plot 2D',
-            obj  = Plot2DView(lorenz=self.application.get_service(Lorenz)),
+    def _create_geometry_view(self, **traits):
+        from pyavl.ui.geometry_viewer import GeometryViewer
+        geometry_view = TraitsUIView(
+            id='pyavl.geometry',
+            name='Geometry View',
+            obj=GeometryViewer(geometry=self.application.get_service('pyavl.avl.AVL').case.geometry),
             **traits
         )
 
-        return plot2d_view
+        return geometry_view
+    
+    
+    def _create_section_view(self, **traits):
+        from pyavl.ui.section_viewer import SectionViewer
+        section_view = TraitsUIView(
+            id='pyavl.section',
+            name='Section View',
+            obj=SectionViewer(section=None),
+            **traits
+        )
+
+        return section_view
+    
     
 #### EOF ######################################################################
 

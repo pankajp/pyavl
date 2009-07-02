@@ -6,11 +6,12 @@ Created on Jun 8, 2009
 
 import pexpect
 import os
-from enthought.traits.api import HasTraits, List, Float, Dict, String, Int, Tuple, Enum, cached_property, Python, Property, on_trait_change, Complex, Array, Instance
+from enthought.traits.api import HasTraits, List, Float, Dict, String, Int, Tuple, Enum, cached_property, Python, Property, on_trait_change, Complex, Array, Instance, Directory
 from enthought.traits.ui.api import View, Item, Group
 import re
 import numpy
 from pyavl.case import Case
+from pyavl.mass import Mass
 #from pyavl.runcase import RunCase
 
     
@@ -212,7 +213,7 @@ class RunCase(HasTraits):
         match = re.search((RunCase.patterns['name']), avl.before)
         name = match.group('case_name').strip()
         AVL.goto_state(avl)
-        runcase = RunCase(name=name, case_num=case_num)
+        runcase = RunCase(name=name, number=case_num)
         runcase.avl = avl
         constrained_params = RunCase.get_constrained_params_from_avl(avl, case_num)
         for constrained_param in constrained_params:
@@ -340,6 +341,8 @@ class AVL(HasTraits):
     state = String('/')
     selected_runcase = Int(1)
     case = Instance(Case)
+    mass = Instance(Mass)
+    cwd = Directory
     
     traits_view = View(Item('selected_runcase'))
     
@@ -348,7 +351,7 @@ class AVL(HasTraits):
         self.avl.sendline(str(self.selected_case))
         AVL.goto_state(self.avl)
     
-    def __init__(self, path='', cwd=None, logfile='/opt/idearesearch/avllog'):
+    def __init__(self, path='', cwd='', logfile='/opt/idearesearch/avllog'):
         '''
         Constructor
         path is the directory where avl binary is found
@@ -406,8 +409,15 @@ class AVL(HasTraits):
             f = open(filename)
         else:
             f = open(os.path.join([self.cwd, filename]))
-        self.case = Case.case_from_input_file(f)
+        self.case = Case.case_from_input_file(f, cwd=self.cwd)
         f.close()
         AVL.goto_state(self.avl)
         self.populate_runcases()
     
+    def load_mass_from_file(self, filename):
+        self.mass = Mass.mass_from_file(filename)
+
+def create_default_avl(*args,**kwargs):
+    avl = AVL(cwd='/opt/idearesearch/avl/runs/')
+    avl.load_case_from_file('/opt/idearesearch/avl/runs/vanilla.avl')
+    return avl

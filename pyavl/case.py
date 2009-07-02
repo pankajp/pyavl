@@ -3,11 +3,11 @@ Created on Jun 8, 2009
 
 @author: pankaj
 '''
-
+import os
 import numpy
 from enthought.traits.api import HasTraits, List, Str, Float, Range, Int, Dict, File,\
-    Trait, Instance, Enum, Array, DelegatesTo, cached_property, Property
-from enthought.traits.ui.api import View, Group, Item
+    Trait, Instance, Enum, Array, DelegatesTo, cached_property, Property, Directory
+from enthought.traits.ui.api import View, Group, Item, TupleEditor, ArrayEditor, TabularEditor, TableEditor
 from geometry import Geometry
 
 def filter_lines(lines):
@@ -37,6 +37,7 @@ class Case(HasTraits):
     ref_cg = Array(numpy.float, (3,))
     CD_p = Float
     geometry = Instance(Geometry)
+    cwd = Directory
     
     traits_view = View(Item('casename'),
                        Item('mach_no'),
@@ -44,7 +45,7 @@ class Case(HasTraits):
                        Item('ref_area'),
                        Item('ref_chord'),
                        Item('ref_span'),
-                       Item('ref_cg'),
+                       Item('ref_cg', editor=TupleEditor()),
                        Item('CD_p')
                        )
     
@@ -71,7 +72,7 @@ class Case(HasTraits):
         file.write('')
     
     @classmethod
-    def case_from_input_file(cls, file):
+    def case_from_input_file(cls, file, cwd=''):
         '''
         return an instance of Case by reading its data from an input file
         '''
@@ -90,8 +91,8 @@ class Case(HasTraits):
             lineno = 6
         except ValueError:
             CD_p = 0.0
-        geometry = Geometry.create_from_lines(lines, lineno)
-        case = Case(casename=casename, mach_no=mach_no, symmetry=symmetry, ref_area=ref_area, ref_chord=ref_chord, ref_span=ref_span, ref_cg=ref_cg, CD_p=CD_p, geometry=geometry)
+        geometry = Geometry.create_from_lines(lines, lineno, cwd=cwd)
+        case = Case(casename=casename, mach_no=mach_no, symmetry=symmetry, ref_area=ref_area, ref_chord=ref_chord, ref_span=ref_span, ref_cg=ref_cg, CD_p=CD_p, geometry=geometry, cwd=cwd)
         return case
     
 if __name__ == '__main__':

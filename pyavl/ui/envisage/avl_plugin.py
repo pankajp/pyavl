@@ -24,7 +24,7 @@ class AVLPlugin(Plugin):
     #### 'IPlugin' interface ##################################################
 
     # The plugin's unique identifier.
-    id = 'pyavl.avl.AVL'
+    id = 'pyavl.ui.envisage'
 
     # The plugin's name (suitable for displaying to the user).
     name = 'pyAVL'
@@ -36,10 +36,9 @@ class AVLPlugin(Plugin):
 
     def _service_offers_default(self):
         """ Trait initializer. """
-
         avl_service_offer = ServiceOffer(
-            protocol = 'pyavl.avl.Avl',
-            factory  = 'pyavl.avl.Avl'
+            protocol = 'pyavl.avl.AVL',
+            factory  = 'pyavl.avl.create_default_avl'
         )
 
         return [avl_service_offer]

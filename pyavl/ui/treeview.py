@@ -55,7 +55,7 @@ AVL_tree_editor = TreeEditor(
 class AVLTreeView(HasTraits):
     avl = Instance(AVL)
     
-    view = View( 
+    traits_view = View( 
         Item( name       = 'avl',   
               editor     = AVL_tree_editor, 
               show_label = False
@@ -74,5 +74,5 @@ if __name__ == '__main__':
     avl = AVL(cwd='/opt/idearesearch/avl/runs/')
     avl.load_case_from_file('/opt/idearesearch/avl/runs/vanilla.avl')
     tv = AVLTreeView(avl=avl)
-    tv.configure_traits(view='view')
+    tv.configure_traits()
 

@@ -13,6 +13,10 @@ Created on Jul 1, 2009
 # Standard library imports.
 import re
 
+import logging
+# Logging.
+logger = logging.getLogger(__name__)
+
 
 from pyavl.avl import AVL, RunCase
 from pyavl.case import Case
@@ -22,7 +26,7 @@ from pyavl.geometry import Geometry, Surface, Section, Body
 from enthought.traits.api import HasTraits, Property, Any, Float, Instance, \
                              Trait, List, Str, Dict, Python
 from enthought.traits.ui.api import \
-     TreeEditor, TreeNodeObject, ObjectTreeNode, View, Item, Group
+     TreeEditor, TreeNodeObject, ObjectTreeNode, View, Item, Group, UI
 from enthought.traits.ui.menu import Menu, Action
 
 from enthought.tvtk.api import tvtk
@@ -534,16 +538,16 @@ class AVLTreeBrowser(HasTraits):
             
     #view = View()
 
+
 if __name__ == '__main__':
     file = open('/opt/idearesearch/avl/runs/vanilla.avl')
     avl = AVL(cwd='/opt/idearesearch/avl/runs/')
     avl.load_case_from_file('/opt/idearesearch/avl/runs/vanilla.avl')
     #tv = AVLTreeView(avl=avl)
     tv = AVLTreeBrowser(avl)
-    from enthought.pyface.api import GUI
     #gui = GUI()
     #tv.show()
     #gui.start_event_loop()
     
-    tv.configure_traits(view=tv.view)
+    tv.configure_traits(view='view')
 

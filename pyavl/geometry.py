@@ -3,10 +3,10 @@ Created on Jun 9, 2009
 
 @author: pankaj
 '''
-
+import os
 import numpy
-from enthought.traits.api import HasTraits, List, Str, Float, Range, Int, Dict,\
-        File, Trait, Instance, Enum, Array, cached_property, Property, String
+from enthought.traits.api import HasTraits, List, Str, Float, Range, Int, Dict, \
+        File, Trait, Instance, Enum, Array, cached_property, Property, String, Directory
 from enthought.traits.ui.api import View, Item, Group, ListEditor
 from enthought.traits.ui.value_tree import TraitsNode
 from pyavl.utils.naca4_plotter import get_NACA4_data
@@ -63,6 +63,7 @@ class SectionData(HasTraits):
 class SectionAFILEData(SectionData):
     filename = File
     x_range = List(Float, [0.0, 1.0], 2, 2)
+    cwd = Directory('')
     
     def write_to_file(self, file):
         file.write('AFILE')
@@ -70,10 +71,10 @@ class SectionAFILEData(SectionData):
         file.write('\n%s\n' % self.filename)
     
     def get_data_points(self):
-        return numpy.loadtxt(open(self.filename), skiprows=1)
+        return numpy.loadtxt(open(os.path.join(self.cwd, self.filename)), skiprows=1)
 
 class SectionAIRFOILData(SectionData):
-    data = Array(numpy.float, ((2,None),2), numpy.array([[0.,0.],[1.,0.]]))
+    data = Array(numpy.float, ((2, None), 2), numpy.array([[0., 0.], [1., 0.]]))
     x_range = List(Float, [0.0, 1.0], 2, 2)
     
     def write_to_file(self, file):
@@ -102,13 +103,14 @@ class Section(HasTraits):
     leading_edge = Array(numpy.float, (3,))
     chord = Float
     angle = Float
-    svortices = List(value=[0,1.0], minlen=2, maxlen=2)
+    svortices = List(value=[0, 1.0], minlen=2, maxlen=2)
     claf = Float(1.0)
-    cd_cl = Array(numpy.float, (3,2))
-    controls = List(Control,[])
-    design_params = Dict(String, Instance(DesignParameter),{})
+    cd_cl = Array(numpy.float, (3, 2))
+    controls = List(Control, [])
+    design_params = Dict(String, Instance(DesignParameter), {})
     type = Enum('flat plate', 'airfoil data', 'airfoil data file', 'NACA')
     data = Instance(SectionData)
+    cwd = Directory
     
     def _type_changed(self):
         if self.type == 'flat plate':
@@ -151,7 +153,7 @@ class Section(HasTraits):
         file.write('')
     
     @classmethod
-    def create_from_lines(cls, lines, lineno):
+    def create_from_lines(cls, lines, lineno, cwd=cwd):
         #TODO:
         dataline = [float(val) for val in lines[lineno + 1].split()]
         leading_edge = dataline[:3]
@@ -160,7 +162,7 @@ class Section(HasTraits):
         if len(dataline) == 7:
             svortices = dataline[5:]
         else:
-            svortices = [0,1.0]
+            svortices = [0, 1.0]
         lineno += 2
         section = Section(leading_edge=leading_edge, chord=chord, angle=angle, svortices=svortices)
         
@@ -195,7 +197,7 @@ class Section(HasTraits):
                 x_range = [0.0, 1.0]
             filename = lines[lineno + 1]
             section.type = 'airfoil data file'
-            section.data = SectionAFILEData(x_range=x_range, filename=filename)
+            section.data = SectionAFILEData(x_range=x_range, filename=filename, cwd=cwd)
             lineno += 2
         else:
             section.data = SectionData()
@@ -247,13 +249,15 @@ class Body(HasTraits):
     num_pts = Int(10)
     # pt, xy
     data = Property(Array(numpy.float), depends_on='filename')
+    cwd = Directory
     @cached_property
     def _get_data(self):
-        return numpy.loadtxt(open(self.filename), skiprows=1)
+        return numpy.loadtxt(open(os.path.join(self.cwd, self.filename)), skiprows=1)
     
     traits_view = View(Item('name'),
                        Item('lsources'),
                        Item('filename'),
+                       Item('cwd'),
                        Item('yduplicate'),
                        Item('scale'),
                        Item('translate'),
@@ -308,13 +312,14 @@ class Surface(HasTraits):
     
     name = Str('Unnamed surface')
     cvortices = List(minlen=2, maxlen=2)
-    svortices = List(value=[0,1.0], minlen=2, maxlen=2)
+    svortices = List(value=[0, 1.0], minlen=2, maxlen=2)
     index = Int
     yduplicate = Float(numpy.nan)
     scale = Array(numpy.float, (3,), numpy.ones((3,)))
     translate = Array(numpy.float, (3,))
     angle = Float
-    sections = List(Section,[])
+    sections = List(Section, [])
+    cwd = Directory
     
     traits_view = View(Item('name'),
                        Item('cvortices'),
@@ -332,7 +337,7 @@ class Surface(HasTraits):
         file.write('\n')
         file.write('# Nchord\tCspace\t[ Nspan\tSspace ]\n')
         file.write('%d\t%f' % tuple(self.cvortices))
-        if self.svortices[0] != 0: file.write('\t%d\t%f' % (self.svortices[0],self.svortices[1]))
+        if self.svortices[0] != 0: file.write('\t%d\t%f' % (self.svortices[0], self.svortices[1]))
         file.write('\n')
         write_vars(['index', 'yduplicate', 'scale', 'translate', 'angle'], self, file)
         for section in self.sections:
@@ -340,7 +345,7 @@ class Surface(HasTraits):
             file.write('\n')
     
     @classmethod
-    def create_from_lines(cls, lines, lineno):
+    def create_from_lines(cls, lines, lineno, cwd=cwd):
         # assert lines[lineno] == 'SURFACE'
         name = lines[lineno + 1]
         vortices = lines[lineno + 2].split()
@@ -348,8 +353,8 @@ class Surface(HasTraits):
         if len(vortices) == 4:
             svortices = [int(vortices[2]), float(vortices[3])]
         else:
-            svortices = [0,1.0]
-        surface = Surface(name=name, cvortices=cvortices, svortices=svortices)
+            svortices = [0, 1.0]
+        surface = Surface(name=name, cvortices=cvortices, svortices=svortices, cwd=cwd)
         lineno += 3
         numlines = len(lines)
         while lineno < numlines:
@@ -370,7 +375,7 @@ class Surface(HasTraits):
                 surface.angle = float(lines[lineno + 1])
                 lineno += 2
             elif cmd.startswith('SECT'):
-                section, lineno = Section.create_from_lines(lines, lineno)
+                section, lineno = Section.create_from_lines(lines, lineno, cwd=cwd)
                 surface.sections.append(section)
             else:
                 break
@@ -382,11 +387,11 @@ class Geometry(TraitsNode):
     A class representing the geometry for a case in avl
     '''
     
-    surfaces = List(Surface,[])
-    bodies = List(Body,[])
+    surfaces = List(Surface, [])
+    bodies = List(Body, [])
     controls = Property(List(String), depends_on='surfaces')
-    
-    traits_view = View(Item('controls',style='readonly')
+    cwd = Directory
+    traits_view = View(Item('controls', style='readonly')
                        )
     @cached_property
     def _get_controls(self):
@@ -411,20 +416,20 @@ class Geometry(TraitsNode):
         file.write('# END BODIES\n\n')
     
     @classmethod
-    def create_from_lines(cls, lines, lineno):
+    def create_from_lines(cls, lines, lineno, cwd=''):
         '''
         creates a geometry object from the lines representing the geometry in an avl input file
         lines are filtered lines and lineno is the line number where the geometry section starts (generally line no 6 or 7)
         returns a tuple of the geometry and the line number till which geometry input existed (generally the last line)
         '''
         numlines = len(lines)
-        geometry = Geometry()
+        geometry = Geometry(cwd=cwd)
         while lineno < numlines:
             if lines[lineno].upper().startswith('SURF'):
-                surface, lineno = Surface.create_from_lines(lines, lineno)
+                surface, lineno = Surface.create_from_lines(lines, lineno, cwd=cwd)
                 geometry.surfaces.append(surface)
             elif lines[lineno].upper().startswith('BODY'):
-                body, lineno = Body.create_from_lines(lines, lineno)
+                body, lineno = Body.create_from_lines(lines, lineno, cwd=cwd)
                 geometry.bodies.append(body)
             else:
                 lineno += 1

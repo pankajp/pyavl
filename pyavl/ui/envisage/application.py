@@ -11,7 +11,7 @@ from enthought.envisage.ui.workbench.api import WorkbenchApplication
 from enthought.pyface.api import AboutDialog, ImageResource, SplashScreen
 
 class PyAVLApplication(WorkbenchApplication):
-    id = 'pyavl.ui.envisage.application'
+    id = 'pyavl.ui.envisage'
     icon = ImageResource('pyAVL.ico')
     name = 'pyAVL'
     

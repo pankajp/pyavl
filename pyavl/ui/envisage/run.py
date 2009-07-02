@@ -6,6 +6,9 @@ import logging
 
 # pyavl imports
 from pyavl.ui.envisage.avl_plugin import AVLPlugin
+from pyavl.ui.envisage.avl_ui_plugin import AVLUIPlugin
+from pyavl.ui.envisage.application import PyAVLApplication
+
 
 # Enthought plugins.
 from enthought.envisage.core_plugin import CorePlugin
@@ -23,11 +26,6 @@ from enthought.logger.plugin.logger_plugin import LoggerPlugin
 from enthought.chaco.plugin.chaco_plugin import ChacoPlugin
 
 
-
-# pyAVL imports.
-from pyavl.ui.envisage.application import PyAVLApplication
-
-
 # Do whatever you want to do with log messages! Here we create a log file.
 logger = logging.getLogger()
 #logger.addHandler(logging.StreamHandler(file('lorenz.log', 'w')))
@@ -43,6 +41,7 @@ def main():
         plugins=[
             CorePlugin(), WorkbenchPlugin(),
             AVLPlugin(),
+            AVLUIPlugin(),
             LoggerPlugin(),
             PythonShellPlugin(),
             TextEditorPlugin(),
