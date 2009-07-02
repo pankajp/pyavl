@@ -15,7 +15,7 @@ from enthought.traits.ui.api import View, Item, Group
 from enthought.tvtk.pyface.scene_editor import SceneEditor
 from enthought.mayavi.tools.mlab_scene_model import MlabSceneModel
 from enthought.mayavi.core.ui.mayavi_scene import MayaviScene
-from enthought.chaco.api import ArrayPlotData, Plot, create_line_plot, ScatterPlot, DataRange2D
+from enthought.chaco.api import ArrayPlotData, Plot, create_line_plot, ScatterPlot, DataRange2D, PlotLabel
 from enthought.enable.component_editor import ComponentEditor
 from enthought.chaco.chaco_plot_editor import ChacoPlotItem
 from enthought.chaco.tools.api import PanTool, ZoomTool, DragZoom, TraitsTool, SaveTool
@@ -48,7 +48,7 @@ class SectionViewer(HasTraits):
         HasTraits.__init__(self, *l, **kw)
         plotdata = ArrayPlotData(x=self.pointsx, y=self.pointsy)
         plot = Plot(plotdata)
-        renderer = plot.plot(("x", "y"))
+        renderer = plot.plot(("x", "y"), title='Section : %s' % self.section.type)
         
         #lineplot = create_line_plot((self.pointsx,self.pointsy), width=2.0)
         #lineplot.tools.append(PanTool(lineplot, drag_button='middle'))
@@ -56,7 +56,9 @@ class SectionViewer(HasTraits):
         plot.tools.append(PanTool(plot, drag_button='left'))
         plot.tools.append(ZoomTool(plot, tool_mode='box'))
         plot.tools.append(DragZoom(plot, tool_mode='box', drag_button='right'))
-        plot.tools.append(CustomSaveTool(plot, filename='/home/pankaj/Desktop/file.png'))
+        plot.tools.append(CustomSaveTool(plot))#, filename='/home/pankaj/Desktop/file.png'))
+        #plot.overlays.append(PlotLabel('Section : %s' % self.section.type,component=plot))
+        plot.title = 'Section : %s' % self.section.type
         #plot.tools.append(PlotToolbar(plot))
         plot.tools.append(TraitsTool(plot))
         #plot.tools.append(ZoomTool(plot, tool_mode='box', axis='index', drag_button='right', always_on=True))
@@ -313,12 +315,12 @@ class GeometryViewer(HasTraits):
 
 if __name__ == '__main__':
     from pyavl.case import Case
-    file = open('/opt/idearesearch/avl/runs/ow.avl')
+    file = open('/opt/idearesearch/avl/runs/bd.avl')
     case = Case.case_from_input_file(file)
-    g = GeometryViewer(geometry=case.geometry)
-    g.configure_traits()
+    #g = GeometryViewer(geometry=case.geometry)
+    #g.configure_traits()
     #print g.surfaces[2].sectiondata
-    sections = case.geometry.surfaces[2].sections
+    sections = case.geometry.surfaces[0].sections
     section = None
     for s in sections:
         if s.type == 'airfoil data file':

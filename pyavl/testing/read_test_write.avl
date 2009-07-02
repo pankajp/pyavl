@@ -1,0 +1,150 @@
+Allegro-lite 2M
+#Mach no
+0.000000
+#iYsym	iZsym	Zsym
+0	0	0.000000
+#Sref	Cref	Bref
+530.000000	6.600000	78.600000
+#Xref	Yref	Zref
+3.250000	0.000000	0.500000
+#CD_p profile drag coefficient
+0.020000
+
+######################################################################
+# SURFACES
+SURFACE
+WING
+# Nchord	Cspace	[ Nspan	Sspace ]
+7	1.000000	20	-2.000000
+INDEX
+0
+YDUPLICATE
+0.0
+SCALE
+[ 0.  0.  0.]
+TRANSLATE
+[ 0.  0.  0.]
+ANGLE
+0.0
+SECTION
+#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]
+0.000000	0.000000	0.000000	8.000000	1.490000	5	0.250000
+AFILE
+ag35.dat
+CLAF
+1.000000
+
+SECTION
+#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]
+0.500000	15.000000	0.000000	7.500000	1.380000	7	-2.600000
+AFILE
+ag36.dat
+CLAF
+1.000000
+
+SECTION
+#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]
+1.875000	31.000000	3.300000	6.000000	1.220000	8	-2.250000
+AFILE
+ag37.dat
+CLAF
+1.000000
+
+SECTION
+#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]
+3.625000	39.300000	7.000000	4.000000	0.940000	1	0.000000
+AFILE
+ag38.dat
+CLAF
+1.000000
+
+
+SURFACE
+Horizontal tail
+# Nchord	Cspace	[ Nspan	Sspace ]
+5	1.000000	7	-1.500000
+INDEX
+0
+YDUPLICATE
+0.0
+SCALE
+[ 0.  0.  0.]
+TRANSLATE
+[ 27.5    0.     1.25]
+ANGLE
+0.0
+SECTION
+#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]
+0.000000	0.000000	0.000000	3.500000	0.000000	7	-1.500000
+CLAF
+1.000000
+CONTROL
+#Cname   Cgain  Xhinge  HingeVec      SgnDup
+elevator	1.000000	0.000000	0.000000 1.000000 0.000000	1.000000
+
+SECTION
+#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]
+1.150000	9.000000	0.000000	1.800000	0.000000	1	0.000000
+CLAF
+1.000000
+CONTROL
+#Cname   Cgain  Xhinge  HingeVec      SgnDup
+elevator	1.000000	0.000000	0.000000 1.000000 0.000000	1.000000
+
+
+SURFACE
+Vertical tail
+# Nchord	Cspace	[ Nspan	Sspace ]
+6	1.000000	10	0.500000
+INDEX
+0
+YDUPLICATE
+nan
+SCALE
+[ 0.  0.  0.]
+TRANSLATE
+[ 33.   0.   0.]
+ANGLE
+0.0
+SECTION
+#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]
+-1.280000	0.000000	-2.000000	3.200000	0.000000	3	1.500000
+CLAF
+1.000000
+CONTROL
+#Cname   Cgain  Xhinge  HingeVec      SgnDup
+rudder	1.000000	0.400000	0.000000 0.000000 1.000000	1.000000
+
+SECTION
+#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]
+-1.680000	0.000000	0.000000	4.200000	0.000000	2	0.500000
+CLAF
+1.000000
+CONTROL
+#Cname   Cgain  Xhinge  HingeVec      SgnDup
+rudder	1.000000	0.400000	0.000000 0.000000 1.000000	1.000000
+
+SECTION
+#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]
+-1.538800	0.000000	1.250000	3.847000	0.000000	8	-1.500000
+CLAF
+1.000000
+CONTROL
+#Cname   Cgain  Xhinge  HingeVec      SgnDup
+rudder	1.000000	0.400000	0.000000 0.000000 1.000000	1.000000
+
+SECTION
+#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]
+-0.720000	0.000000	8.500000	1.800000	0.000000	1	0.000000
+CLAF
+1.000000
+CONTROL
+#Cname   Cgain  Xhinge  HingeVec      SgnDup
+rudder	1.000000	0.400000	0.000000 0.000000 1.000000	1.000000
+
+
+# END SURFACES
+
+# BODIES
+# END BODIES
+

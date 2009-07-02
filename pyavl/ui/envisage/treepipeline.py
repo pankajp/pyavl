@@ -3,34 +3,9 @@ Created on Jul 1, 2009
 
 @author: pankaj
 '''
-"""A tvtk pipeline browser.
 
-An abstract `TreeGenerator` class defines the interface of a tree
-generator.  This class is responsible for generating the list of
-children.  Often tvtk object's children are collections of various
-objects, some sequences and some simple objects.  In order to provide
-a unified interface to all children, all of these objects are wrapped
-using the `CompositeIterable` which presents all children as a single
-iterable.
-
-`SimpleTreeGenerator` does not do extensive analysis of the passed
-object in order to compute the children.  `FullTreeGenerator` however
-uses the algorithm that MayaVi-1.x uses and therefore generates a
-large number of objects.
-
-The `PipelineBrowser` class presents the view of the pipeline as a
-tree.  It allows one to specify the TreeGenerator instance.  The
-`TreeEditor` from the traits package is used to represent the view.  A
-`TVTKLeafNode` defines a node that has no children.  A
-`TVTKBranchNode` is a node that has children.  The nodes basically
-wrap up the tvtk object and present an interface suitable for the
-TreeEditor.
-
-TODO:
-
- * When a node is selected, the actor involved could be highlighted.
-
-"""
+# Idea + major component of code taken from below signed
+ 
 # Author: Prabhu Ramachandran <prabhu_r@users.sf.net>
 # Copyright (c) 2005, Enthought, Inc.
 # License: BSD Style.

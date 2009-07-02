@@ -7,7 +7,7 @@ Created on Jun 8, 2009
 import pexpect
 import os
 from enthought.traits.api import HasTraits, List, Float, Dict, String, Int, Tuple, Enum, cached_property, Python, Property, on_trait_change, Complex, Array, Instance
-from enthought.traits.ui.api import EnumEditor
+from enthought.traits.ui.api import View, Item, Group
 import re
 import numpy
 from pyavl.case import Case
@@ -39,6 +39,11 @@ class RunCase(HasTraits):
     number = Int
     name = String
     output = Dict(String, Float, {})
+    
+    traits_view = View(Item('number',style='readonly'),
+                       Item('name'),
+                       Item('parameters'),
+                       Item('constraints'))
     
     # name, value
     parameters = Dict(String, Float, {})
@@ -335,6 +340,8 @@ class AVL(HasTraits):
     state = String('/')
     selected_runcase = Int(1)
     case = Instance(Case)
+    
+    traits_view = View(Item('selected_runcase'))
     
     def _selected_case_changed(self):
         self.avl.sendline('oper')

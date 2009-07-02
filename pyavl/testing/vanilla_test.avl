@@ -1,0 +1,96 @@
+Plane Vanilla
+#Mach no
+0.000000
+#iYsym	iZsym	Zsym
+0	0	0.000000
+#Sref	Cref	Bref
+9.000000	0.900000	10.000000
+#Xref	Yref	Zref
+0.500000	0.000000	0.000000
+
+######################################################################
+# SURFACES
+SURFACE
+V-stab
+# Nchord	Cspace	[ Nspan	Sspace ]
+6	1.000000	5	1.000000
+4.0	0.0	0.0	
+SECTION
+#Xle Yle Zle Chord Ainc [ Nspan Sspace ]
+0.000000	0.000000	0.000000	0.700000	0.000000	0	0.000000
+CONTROL
+#Cname   Cgain  Xhinge  HingeVec      SgnDup
+rudder	1.000000	0.500000	0.000000 0.000000 1.000000	1.000000
+
+SECTION
+#Xle Yle Zle Chord Ainc [ Nspan Sspace ]
+0.140000	0.000000	1.000000	0.420000	0.000000	0	0.000000
+CONTROL
+#Cname   Cgain  Xhinge  HingeVec      SgnDup
+rudder	1.000000	0.500000	0.000000 0.000000 1.000000	1.000000
+
+
+SURFACE
+Wing
+# Nchord	Cspace	[ Nspan	Sspace ]
+8	1.000000	12	1.000000
+YDUPLICATE
+0.0
+ANGLE
+2.0
+SECTION
+#Xle Yle Zle Chord Ainc [ Nspan Sspace ]
+0.000000	0.000000	0.000000	1.000000	0.000000	0	0.000000
+AFILE
+sd7037.dat
+CLAF
+1.000000
+CONTROL
+#Cname   Cgain  Xhinge  HingeVec      SgnDup
+aileron	-1.000000	0.750000	0.000000 0.000000 0.000000	-1.000000
+CONTROL
+#Cname   Cgain  Xhinge  HingeVec      SgnDup
+flap	1.000000	0.750000	0.000000 0.000000 0.000000	1.000000
+
+SECTION
+#Xle Yle Zle Chord Ainc [ Nspan Sspace ]
+0.200000	5.000000	1.000000	0.600000	0.000000	0	0.000000
+AFILE
+sd7037.dat
+CLAF
+1.000000
+CONTROL
+#Cname   Cgain  Xhinge  HingeVec      SgnDup
+aileron	-1.000000	0.750000	0.000000 0.000000 0.000000	-1.000000
+CONTROL
+#Cname   Cgain  Xhinge  HingeVec      SgnDup
+flap	1.000000	0.750000	0.000000 0.000000 0.000000	1.000000
+
+
+SURFACE
+H-stab
+# Nchord	Cspace	[ Nspan	Sspace ]
+6	1.000000	6	1.000000
+YDUPLICATE
+0.0
+4.0	0.0	0.0	
+SECTION
+#Xle Yle Zle Chord Ainc [ Nspan Sspace ]
+0.000000	0.000000	0.000000	0.700000	0.000000	0	0.000000
+CONTROL
+#Cname   Cgain  Xhinge  HingeVec      SgnDup
+elevator	1.000000	0.700000	0.000000 1.000000 0.000000	1.000000
+
+SECTION
+#Xle Yle Zle Chord Ainc [ Nspan Sspace ]
+0.140000	1.250000	0.000000	0.420000	0.000000	0	0.000000
+CONTROL
+#Cname   Cgain  Xhinge  HingeVec      SgnDup
+elevator	1.000000	0.700000	0.000000 1.000000 0.000000	1.000000
+
+
+# END SURFACES
+
+# BODIES
+# END BODIES
+

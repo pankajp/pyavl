@@ -4,23 +4,27 @@ Created on Jun 30, 2009
 @author: pankaj
 '''
 
-from enthought.traits.api import File, Enum, Tuple, HasTraits
+from enthought.traits.api import File, Enum, Tuple, HasTraits, DelegatesTo, Instance
 from enthought.traits.ui.api import View, Item
 from enthought.traits.ui.menu import Action
 from enthought.chaco.tools.api import SaveTool
 
 import os
 
-
 class CustomSaveTool(SaveTool):
-    
-    # The file that the image is saved in.  The format will be deduced from
-    # the extension.
-    filename = File("/home/pankaj/Desktop/saved_plot.png")
-    
     """ This tool allows the user to press Ctrl+S to save a snapshot image of
     the plot component.
     """
+    
+    # This hack was done because calling self.configure_traits in normal_key_pressed
+    # causes corruption in saved image and also the ui
+    class FileName(HasTraits):
+        filename = File("saved_plot.png")
+
+    # The file that the image is saved in.  The format will be deduced from
+    # the extension.
+    filenameview = Instance(FileName, FileName())
+    filename = DelegatesTo('filenameview') # File("/home/pankaj/Desktop/saved_plot.png")
     
     #-------------------------------------------------------------------------
     # PDF format options
@@ -50,12 +54,12 @@ class CustomSaveTool(SaveTool):
             return
 
         if event.character == "s" and event.control_down:
-            #self.configure_traits(view=View(Item('filename')), kind='modal')
-            if os.path.splitext(self.filename)[-1] == ".pdf":
-                self._save_pdf()
-            else:
-                self._save_raster()
-            event.handled = True
+            if self.filenameview.configure_traits(view=View(Item('filename'), buttons=['OK','Cancel']), kind='modal'):
+                if os.path.splitext(self.filename)[-1] == ".pdf":
+                    self._save_pdf()
+                else:
+                    self._save_raster()
+                event.handled = True
         return
     
     def _save_raster(self):

@@ -73,8 +73,8 @@ class SectionAFILEData(SectionData):
         return numpy.loadtxt(open(self.filename), skiprows=1)
 
 class SectionAIRFOILData(SectionData):
-    data = Array
-    x_range = Trait(None, None, List(Float, [0.0, 1.0], 2, 2))
+    data = Array(numpy.float, ((2,None),2), numpy.array([[0.,0.],[1.,0.]]))
+    x_range = List(Float, [0.0, 1.0], 2, 2)
     
     def write_to_file(self, file):
         file.write('AIRFOIL')
@@ -109,6 +109,28 @@ class Section(HasTraits):
     design_params = Dict(String, Instance(DesignParameter),{})
     type = Enum('flat plate', 'airfoil data', 'airfoil data file', 'NACA')
     data = Instance(SectionData)
+    
+    def _type_changed(self):
+        if self.type == 'flat plate':
+            self.data = SectionData()
+        elif self.type == 'airfoil data':
+            self.data = SectionAIRFOILData()
+        elif self.type == 'airfoil data file':
+            self.data = SectionAFILEData()
+        elif self.type == 'NACA':
+            self.data = SectionNACAData()
+    
+    traits_view = View(Item('leading_edge'),
+                       Item('chord'),
+                       Item('angle'),
+                       Item('svortices'),
+                       Item('claf'),
+                       Item('cd_cl'),
+                       Item('design_params'),
+                       Item('type'),
+                       Item('data', style='custom'),
+                       )
+    
     
     def write_to_file(self, file):
         # TODO: implement
@@ -229,6 +251,14 @@ class Body(HasTraits):
     def _get_data(self):
         return numpy.loadtxt(open(self.filename), skiprows=1)
     
+    traits_view = View(Item('name'),
+                       Item('lsources'),
+                       Item('filename'),
+                       Item('yduplicate'),
+                       Item('scale'),
+                       Item('translate'),
+                       Item('num_pts'),
+                       )
     
     def write_to_file(self, file):
         file.write('BODY\n')
@@ -285,6 +315,16 @@ class Surface(HasTraits):
     translate = Array(numpy.float, (3,))
     angle = Float
     sections = List(Section,[])
+    
+    traits_view = View(Item('name'),
+                       Item('cvortices'),
+                       Item('svortices'),
+                       Item('index'),
+                       Item('yduplicate'),
+                       Item('scale'),
+                       Item('translate'),
+                       Item('angle'),
+                       )
     
     def write_to_file(self, file):
         file.write('SURFACE\n')
@@ -344,20 +384,10 @@ class Geometry(TraitsNode):
     
     surfaces = List(Surface,[])
     bodies = List(Body,[])
-    
-    # for tree view
-    things = Property(List, depends_on='surfaces,geometries')
-    @cached_property
-    def _get_things(self):
-        return [self.surfaces, self.bodies]
-    
-    traits_view = View(Item('surfaces', editor=ListEditor(style='custom')),
-                       Item('bodies', editor=ListEditor(style='custom')),
-                       scrollable=True,
-                       resizable=True
-                    )
-    
     controls = Property(List(String), depends_on='surfaces')
+    
+    traits_view = View(Item('controls',style='readonly')
+                       )
     @cached_property
     def _get_controls(self):
         ret = set([])
