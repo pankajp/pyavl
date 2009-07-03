@@ -9,9 +9,9 @@ from enthought.traits.api import HasTraits, Tuple, List, Float, String
 from enthought.traits.ui.api import View, Item, ListEditor, TupleEditor, TextEditor
 
 #  Copyright (c) 2007, Enthought, Inc.
-#  License: BSD Style.# Imports:  
+#  License: BSD Style.# Imports:
 from enthought.traits.api \
-    import HasStrictTraits, Str, Int, Regex, List, Instance
+    import HasStrictTraits, Str, Int, Regex, List, Instance, cached_property, Property, Dict
     
 from enthought.traits.ui.api \
     import View, Item, Tabbed, TableEditor, ListEditor
@@ -23,16 +23,28 @@ from enthought.traits.ui.table_filter \
     import RuleTableFilter, RuleFilterTemplate, \
            MenuFilterTemplate, EvalFilterTemplate
 
+class C(HasTraits):
+    a = String
+    def __repr__(self):
+        return '<Instance class C>(a=%s)' % self.a
+
 class A(HasTraits):
-    l = List(Tuple(String,Float,String))
-    traits_view = View(Item('l', editor=ListEditor(mutable=False,
-                    editor=TupleEditor(cols=3, editors=[TextEditor(),
-                            TextEditor(evaluate=float), TextEditor()]))))
+    d = Dict(String,Instance(C),{})
+    p = Property(List(Instance(C)), depends_on='d')
+    @cached_property
+    def _get_p(self):
+        return self.d.values()
+    traits_view = View(['d','p'])
     def update(self,l):
         for t in l:
-            self.add_trait(t[0], Tuple(Float,String))
-            self.trait_setq({l[0]:(t[1],t[2])})
+            self.d[t[0]] = C(a=t[2])
     
 a = A()
+print a.d
+print a.p
 a.update([('Mach No',1.6,''),('Temperature',380,'K')])
+print a.d
+print a.p
 a.configure_traits()
+print a.d
+print a.p

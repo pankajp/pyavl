@@ -6,7 +6,7 @@ Created on Jun 8, 2009
 
 import pexpect
 import os
-from enthought.traits.api import HasTraits, List, Float, Dict, String, Int, Tuple,\
+from enthought.traits.api import HasTraits, List, Float, Dict, String, Int, Tuple, \
     Enum, cached_property, Python, Property, on_trait_change, Complex, Array, Instance, Directory, ReadOnly
 from enthought.traits.ui.api import View, Item, Group, VGroup, ListEditor, TupleEditor, TextEditor, TableEditor
 from enthought.traits.ui.table_column import ObjectColumn
@@ -35,11 +35,11 @@ class Parameter(HasTraits):
     pattern = String
     cmd = String
     editor = TableEditor(
-        auto_size    = False,
-        columns  = [ ObjectColumn( name = 'name', editable=False, label='Parameter'),
-                     ObjectColumn( name = 'value', label='Value' ), 
-                     ObjectColumn( name = 'unit', editable=False, label='Unit')
-                    ] )
+        auto_size=False,
+        columns=[ ObjectColumn(name='name', editable=False, label='Parameter'),
+                     ObjectColumn(name='value', label='Value'),
+                     ObjectColumn(name='unit', editable=False, label='Unit')
+                    ])
 
 class Constraint(HasTraits):
     name = String
@@ -48,11 +48,11 @@ class Constraint(HasTraits):
     pattern = String
     cmd = String
     editor = TableEditor(
-        auto_size    = False,
-        columns  = [ ObjectColumn( name = 'name', editable=False, label='Parameter'),
-                     ObjectColumn( name = 'constraint_name', label='Constraint' ), 
-                     ObjectColumn( name = 'value', editable=False, label='Value')
-                    ] )
+        auto_size=False,
+        columns=[ ObjectColumn(name='name', editable=False, label='Parameter'),
+                     ObjectColumn(name='constraint_name', label='Constraint'),
+                     ObjectColumn(name='value', editable=False, label='Value')
+                    ])
 
 
 class RunCase(HasTraits):
@@ -69,7 +69,7 @@ class RunCase(HasTraits):
     name = String
     output = Dict(String, Float, {})
     
-    traits_view = View(Group(Item('number',style='readonly'),
+    traits_view = View(Group(Item('number', style='readonly'),
                              Item('name')),
                        Group(Item('parameter_view', editor=Parameter.editor, show_label=False), label='Parameters'),
                        Group(Item('constraint_view', editor=Constraint.editor, show_label=False), label='Constraints'),
@@ -77,15 +77,15 @@ class RunCase(HasTraits):
                        )
     
     # name, value
-    parameters = Dict(String, Float, {})
-    # pattern:name
+    parameters = Dict(String, Instance(Parameter), {})
+    # pattern:name ; Predefined parameters to have good names
     parameter_names = Dict(String, String, {})
     # name:(cmd,pattern,unit)
-    parameters_info = Dict(String, Tuple(String, String, String), {})
+    #parameters_info = Dict(String, Tuple(String, String, String), {})
     
     # TODO: fixit
     # name:pattern
-    #constrained_params = Property(Dict(String, String), depends_on='constrained_patterns')
+    constrained_params = Property(Dict(String, String), depends_on='constrained_patterns')
     @cached_property
     def _get_constrained_params(self):
         return self.constrained_patterns.keys()
@@ -171,11 +171,7 @@ class RunCase(HasTraits):
     constraint_view = Property(List(Constraint), depends_on='parameters[]')
     @cached_property
     def _get_parameter_view(self):
-        l = []
-        for k,v in self.parameters.iteritems():
-            l.append(Parameter(name=k,value=float(v),unit=self.parameters_info[k][2]))
-        print 'parameter_view:', l
-        return l
+        return self.parameters.values()
     def _get_constraint_view(self):
         l = []
         return l
@@ -200,11 +196,17 @@ class RunCase(HasTraits):
         self.avl.sendline('oper')
         self.avl.sendline('m')
         self.avl.expect(AVL.patterns['/oper/m'])
-        self.avl.sendline('V %f' % max(self.parameters['velocity'], 0.001))
+        #print self.parameters.keys()
+        tmpv = 0.001
+        try:
+            tmpv = max(self.parameters['velocity'].value, 0.001)
+        except KeyError:
+            pass
+        self.avl.sendline('V %f' % tmpv)
         for p, v in self.parameters.iteritems():
-            cmd = self.parameters_info[p][0]
+            cmd = self.parameters[p].cmd
             if cmd != 'V':
-                self.avl.sendline('%s %f' % (cmd, v))
+                self.avl.sendline('%s %f' % (cmd, v.value))
         AVL.goto_state(self.avl)
     
     @classmethod
@@ -291,8 +293,7 @@ class RunCase(HasTraits):
             name = self.parameter_names.get(pattern, pattern)
             unit = group.get('unit', '')
             unit = unit if unit is not None else ''
-            self.parameters_info[name] = (group['cmd'], pattern, unit)
-            params[name] = float(group['val'])
+            params[name] = Parameter(name=name, pattern=pattern, cmd=group['cmd'], unit=unit, value=float(group['val']))
         #self.parameters[name] = float(group['val'])
         self.parameters.update(params)
         AVL.goto_state(avl)
@@ -307,11 +308,11 @@ class RunCase(HasTraits):
         i1 = re.search(r"""Run case:\s*?.*?\n""", self.avl.before).end()
         i2 = re.search(r"""---------------------------------------------------------------""", self.avl.before[i1:]).start()
         text = self.avl.before[i1:i1 + i2]
-        AVL.goto_state(avl)
+        AVL.goto_state(self.avl)
         for match in re.finditer(RunCase.patterns['var'], text):
             ret[match.group('name')] = float(match.group('value'))
         self.output = ret
-        AVL.goto_state(avl)
+        AVL.goto_state(self.avl)
         return ret
     
     def get_modes(self):
@@ -338,7 +339,7 @@ class RunCase(HasTraits):
                 if i > 11:
                     break
             modes.append(mode)
-        AVL.goto_state(avl)
+        AVL.goto_state(self.avl)
         return modes
     
     def get_system_matrix(self):
@@ -461,7 +462,7 @@ class AVL(HasTraits):
     def load_mass_from_file(self, filename):
         self.mass = Mass.mass_from_file(filename)
 
-def create_default_avl(*args,**kwargs):
+def create_default_avl(*args, **kwargs):
     avl = AVL(cwd='/opt/idearesearch/avl/runs/')
     avl.load_case_from_file('/opt/idearesearch/avl/runs/vanilla.avl')
     return avl

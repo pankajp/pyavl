@@ -42,10 +42,10 @@ class Test(unittest.TestCase):
     def test_param_modify(self):
         self.avl.load_case_from_file(self.filename)
         rc = self.avl.run_cases[0]
-        p = rc.parameters_info['bank']
-        rc.parameters['bank'] = 2.2
+        p = rc.parameters['bank']
+        rc.parameters['bank'].value = 2.2
         assert 'bank' in rc.parameters
-        assert rc.parameters['bank'] == 2.2
+        assert rc.parameters['bank'].value == 2.2
     
     def test_constraint_modify(self):
         self.avl.load_case_from_file(self.filename)
@@ -71,8 +71,8 @@ class Test(unittest.TestCase):
         self.avl.load_case_from_file(self.filename)
         rc = self.avl.run_cases[0]
         print rc.parameters.keys()
-        rc.parameters['velocity'] = 100.0
-        print rc.parameters['velocity']
+        rc.parameters['velocity'].value = 100.0
+        print rc.parameters['velocity'].value
         out = rc.get_modes()
         print [o.eigenvalue for o in out]
         print 'num modes:', len(out)
@@ -82,8 +82,8 @@ class Test(unittest.TestCase):
         self.avl.load_case_from_file(self.filename)
         rc = self.avl.run_cases[0]
         print rc.parameters.keys()
-        rc.parameters['velocity'] = 100.0
-        print rc.parameters['velocity']
+        rc.parameters['velocity'].value = 100.0
+        print rc.parameters['velocity'].value
         out = rc.get_system_matrix()
         print out
         print out.matrix
