@@ -6,8 +6,10 @@ Created on Jun 8, 2009
 
 import pexpect
 import os
-from enthought.traits.api import HasTraits, List, Float, Dict, String, Int, Tuple, Enum, cached_property, Python, Property, on_trait_change, Complex, Array, Instance, Directory
-from enthought.traits.ui.api import View, Item, Group
+from enthought.traits.api import HasTraits, List, Float, Dict, String, Int, Tuple,\
+    Enum, cached_property, Python, Property, on_trait_change, Complex, Array, Instance, Directory, ReadOnly
+from enthought.traits.ui.api import View, Item, Group, VGroup, ListEditor, TupleEditor, TextEditor, TableEditor
+from enthought.traits.ui.table_column import ObjectColumn
 import re
 import numpy
 from pyavl.case import Case
@@ -26,6 +28,32 @@ class EigenMatrix(HasTraits):
     matrix = Array(numpy.float, shape=(12, (12, None)))
     order = List(String, ['u', 'w', 'q', 'the', 'v', 'p', 'r', 'phi', 'x', 'y', 'z', 'psi'])
 
+class Parameter(HasTraits):
+    name = String
+    value = Float
+    unit = String
+    pattern = String
+    cmd = String
+    editor = TableEditor(
+        auto_size    = False,
+        columns  = [ ObjectColumn( name = 'name', editable=False, label='Parameter'),
+                     ObjectColumn( name = 'value', label='Value' ), 
+                     ObjectColumn( name = 'unit', editable=False, label='Unit')
+                    ] )
+
+class Constraint(HasTraits):
+    name = String
+    constrait_name = String
+    value = Float
+    pattern = String
+    cmd = String
+    editor = TableEditor(
+        auto_size    = False,
+        columns  = [ ObjectColumn( name = 'name', editable=False, label='Parameter'),
+                     ObjectColumn( name = 'constraint_name', label='Constraint' ), 
+                     ObjectColumn( name = 'value', editable=False, label='Value')
+                    ] )
+
 
 class RunCase(HasTraits):
     patterns = {'name':re.compile(r"""Operation of run case (?P<case_num>\d+)/(?P<num_cases>\d+):\s*(?P<case_name>.+?)\ *?\n"""),
@@ -41,10 +69,12 @@ class RunCase(HasTraits):
     name = String
     output = Dict(String, Float, {})
     
-    traits_view = View(Item('number',style='readonly'),
-                       Item('name'),
-                       Item('parameters'),
-                       Item('constraints'))
+    traits_view = View(Group(Item('number',style='readonly'),
+                             Item('name')),
+                       Group(Item('parameter_view', editor=Parameter.editor, show_label=False), label='Parameters'),
+                       Group(Item('constraint_view', editor=Constraint.editor, show_label=False), label='Constraints'),
+                        Item() # so that groups are not tabbed
+                       )
     
     # name, value
     parameters = Dict(String, Float, {})
@@ -136,6 +166,19 @@ class RunCase(HasTraits):
                                  'yaw rate': ('yaw rate', 0.0),
                                  'pitch rate': ('pitch rate', 0.0)}
                         )
+    
+    parameter_view = Property(List(Parameter), depends_on='parameters[]')
+    constraint_view = Property(List(Constraint), depends_on='parameters[]')
+    @cached_property
+    def _get_parameter_view(self):
+        l = []
+        for k,v in self.parameters.iteritems():
+            l.append(Parameter(name=k,value=float(v),unit=self.parameters_info[k][2]))
+        print 'parameter_view:', l
+        return l
+    def _get_constraint_view(self):
+        l = []
+        return l
     
     @on_trait_change('constraints[]')
     def update_constraints(self):
@@ -359,6 +402,7 @@ class AVL(HasTraits):
         logfile is where all output is to be logged
         '''
         self.avl = pexpect.spawn(os.path.join(path, 'avl'), logfile=open(logfile, 'w'), cwd=cwd)
+        self.avl.timeout = 10
         self.cwd = cwd
         self.disable_plotting()
         

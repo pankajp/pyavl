@@ -33,8 +33,8 @@ AVL_tree_editor = TreeEditor(
         TreeNode( node_for  = [ Case ],
                   auto_open = True,
                   children  = 'geometries',
-                  label     = 'casename',
-                  view      = View( [ 'casename','mach_no'] )
+                  label     = 'name',
+                  view      = View( [ 'name','mach_no'] )
         ),
         TreeNode( node_for  = [ Geometry ],
                   auto_open = True,

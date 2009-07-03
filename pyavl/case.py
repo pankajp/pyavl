@@ -28,7 +28,7 @@ class Case(HasTraits):
     '''
     A class representing an avl input file
     '''
-    casename = Str()
+    name = Str()
     mach_no = Float()
     symmetry = List(minlen=3, maxlen=3)
     ref_area = Float()
@@ -39,13 +39,13 @@ class Case(HasTraits):
     geometry = Instance(Geometry)
     cwd = Directory
     
-    traits_view = View(Item('casename'),
+    traits_view = View(Item('name'),
                        Item('mach_no'),
                        Item('symmetry'),
                        Item('ref_area'),
                        Item('ref_chord'),
                        Item('ref_span'),
-                       Item('ref_cg', editor=TupleEditor()),
+                       Item('ref_cg', editor=ArrayEditor()),
                        Item('CD_p')
                        )
     
@@ -58,7 +58,7 @@ class Case(HasTraits):
         '''
         Write all the data in the case in the appropriate format as in input .avl file for the AVL program
         '''
-        file.write(self.casename + '\n')
+        file.write(self.name + '\n')
         file.write('#Mach no\n%f\n' % self.mach_no)
         file.write('#iYsym\tiZsym\tZsym\n%d\t%d\t%f\n' % tuple(self.symmetry))
         file.write('#Sref\tCref\tBref\n%f\t%f\t%f\n' % (self.ref_area, self.ref_chord, self.ref_span))
@@ -79,7 +79,7 @@ class Case(HasTraits):
         lines = file.readlines()
         lines = filter_lines(lines)
         lineno = 0
-        casename = lines[0]
+        name = lines[0]
         mach_no = float(lines[1].split()[0])
         symmetry = lines[2].split()
         symmetry = [int(symmetry[0]), int(symmetry[1]), float(symmetry[2])]
@@ -92,7 +92,7 @@ class Case(HasTraits):
         except ValueError:
             CD_p = 0.0
         geometry = Geometry.create_from_lines(lines, lineno, cwd=cwd)
-        case = Case(casename=casename, mach_no=mach_no, symmetry=symmetry, ref_area=ref_area, ref_chord=ref_chord, ref_span=ref_span, ref_cg=ref_cg, CD_p=CD_p, geometry=geometry, cwd=cwd)
+        case = Case(name=name, mach_no=mach_no, symmetry=symmetry, ref_area=ref_area, ref_chord=ref_chord, ref_span=ref_span, ref_cg=ref_cg, CD_p=CD_p, geometry=geometry, cwd=cwd)
         return case
     
 if __name__ == '__main__':

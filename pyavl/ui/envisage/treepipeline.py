@@ -113,7 +113,7 @@ class SimpleTreeGenerator(TreeGenerator):
     def has_children(self, obj):
         """Returns true of the object has children, false if not.  This is
         very specific to tvtk objects."""
-        if isinstance(obj, (AVL,Case,RunCase,Geometry,Surface)):
+        if isinstance(obj, (AVL,Case,Geometry,Surface, RunCase)):
             return True
         return False
 
@@ -137,8 +137,8 @@ class SimpleTreeGenerator(TreeGenerator):
             return {'run_cases':obj.run_cases,'case':obj.case}
         elif isinstance(obj, Case):
             return {'geometry':obj.geometry}
-        #elif isinstance(obj, RunCase):
-        #    return {'parameters':obj.parameters}
+        elif isinstance(obj, RunCase):
+            return {}
         elif isinstance(obj, Geometry):
             return {'surfaces':obj.surfaces, 'bodies':obj.bodies}
         elif isinstance(obj, Surface):
@@ -225,7 +225,7 @@ class TreeLeafNode(TreeNodeObject):
     # The tvtk object being wrapped.
     object = Instance(HasTraits)
     # Name to show on the view.
-    name = Property
+    name = Property(Str, depends_on='object.name?')
 
     # Work around problem with HasPrivateTraits.
     __ = Python
@@ -234,6 +234,12 @@ class TreeLeafNode(TreeNodeObject):
     #    return hash(tvtk.to_vtk(self.object))
         
     def _get_name(self):
+        if isinstance(self.object, AVL):
+            return 'pyAVL'
+        elif isinstance(self.object, (Case,RunCase,Surface,Body)):
+            return self.object.name
+        elif isinstance(self.object, Geometry):
+            pass
         return self.object.__class__.__name__
 
     ######################################################################
@@ -261,7 +267,7 @@ class TreeBranchNode(TreeNodeObject):
     # Children of the object.
     children = Property
     # Name to show on the view.
-    name = Property
+    name = Property(Str, depends_on='object.name?')
     # Tree generator to use.
     tree_generator = Instance(TreeGenerator)
     # Cache of children.
@@ -327,6 +333,12 @@ class TreeBranchNode(TreeNodeObject):
         return CompositeIterable(kids, tree_generator=tg)
 
     def _get_name(self):
+        if isinstance(self.object, AVL):
+            return 'pyAVL'
+        elif isinstance(self.object, (Case,RunCase,Surface,Body)):
+            return self.object.name
+        elif isinstance(self.object, Geometry):
+            pass
         return self.object.__class__.__name__
 
     ######################################################################
@@ -549,5 +561,5 @@ if __name__ == '__main__':
     #tv.show()
     #gui.start_event_loop()
     
-    tv.configure_traits(view='view')
+    tv.configure_traits(view=tv.view)
 

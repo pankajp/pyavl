@@ -7,7 +7,7 @@ import os
 import numpy
 from enthought.traits.api import HasTraits, List, Str, Float, Range, Int, Dict, \
         File, Trait, Instance, Enum, Array, cached_property, Property, String, Directory
-from enthought.traits.ui.api import View, Item, Group, ListEditor
+from enthought.traits.ui.api import View, Item, Group, ListEditor, ArrayEditor, ListStrEditor
 from enthought.traits.ui.value_tree import TraitsNode
 from pyavl.utils.naca4_plotter import get_NACA4_data
 
@@ -122,12 +122,12 @@ class Section(HasTraits):
         elif self.type == 'NACA':
             self.data = SectionNACAData()
     
-    traits_view = View(Item('leading_edge'),
+    traits_view = View(Item('leading_edge', editor=ArrayEditor()),
                        Item('chord'),
                        Item('angle'),
                        Item('svortices'),
                        Item('claf'),
-                       Item('cd_cl'),
+                       Item('cd_cl', editor=ArrayEditor()),
                        Item('design_params'),
                        Item('type'),
                        Item('data', style='custom'),
@@ -259,8 +259,8 @@ class Body(HasTraits):
                        Item('filename'),
                        Item('cwd'),
                        Item('yduplicate'),
-                       Item('scale'),
-                       Item('translate'),
+                       Item('scale', editor=ArrayEditor()),
+                       Item('translate', editor=ArrayEditor()),
                        Item('num_pts'),
                        )
     
@@ -326,8 +326,8 @@ class Surface(HasTraits):
                        Item('svortices'),
                        Item('index'),
                        Item('yduplicate'),
-                       Item('scale'),
-                       Item('translate'),
+                       Item('scale', editor=ArrayEditor()),
+                       Item('translate', editor=ArrayEditor()),
                        Item('angle'),
                        )
     
@@ -391,7 +391,7 @@ class Geometry(TraitsNode):
     bodies = List(Body, [])
     controls = Property(List(String), depends_on='surfaces')
     cwd = Directory
-    traits_view = View(Item('controls', style='readonly')
+    traits_view = View(Item('controls', editor=ListStrEditor(editable=False), style='readonly')
                        )
     @cached_property
     def _get_controls(self):
