@@ -30,10 +30,10 @@ class C(HasTraits):
 
 class A(HasTraits):
     d = Dict(String,Instance(C),{})
-    p = Property(List(Instance(C)), depends_on='d')
+    p = Property(List(String), depends_on='d')
     @cached_property
     def _get_p(self):
-        return self.d.values()
+        return self.d.keys()
     traits_view = View(['d','p'])
     def update(self,l):
         for t in l:

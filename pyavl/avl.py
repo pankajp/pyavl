@@ -7,8 +7,10 @@ Created on Jun 8, 2009
 import pexpect
 import os
 from enthought.traits.api import HasTraits, List, Float, Dict, String, Int, Tuple, \
-    Enum, cached_property, Python, Property, on_trait_change, Complex, Array, Instance, Directory, ReadOnly
-from enthought.traits.ui.api import View, Item, Group, VGroup, ListEditor, TupleEditor, TextEditor, TableEditor
+    Enum, cached_property, Python, Property, on_trait_change, Complex, Array, Instance, \
+    Directory, ReadOnly, DelegatesTo, Any
+from enthought.traits.ui.api import View, Item, Group, VGroup, ListEditor, TupleEditor, \
+    TextEditor, TableEditor, EnumEditor
 from enthought.traits.ui.table_column import ObjectColumn
 import re
 import numpy
@@ -37,28 +39,42 @@ class Parameter(HasTraits):
     editor = TableEditor(
         auto_size=False,
         columns=[ ObjectColumn(name='name', editable=False, label='Parameter'),
-                     ObjectColumn(name='value', label='Value'),
+                     ObjectColumn(name='value', label='Value', editor=TextEditor(evaluate=float, enter_set=True, auto_set=False)),
                      ObjectColumn(name='unit', editable=False, label='Unit')
                     ])
 
+# This is the object which is constrained
+# example alpha is constrained by the condition elevator = 1
+# the in this case constrained=elevator
+class ConstraintVariable(HasTraits):
+    name = String
+    pattern = String
+    cmd = String
+
 class Constraint(HasTraits):
     name = String
-    constrait_name = String
+    runcase = Any
+    constraint_variables_available = Property(List(String), depends_on='runcase.constraint_variables')
+    @cached_property
+    def _get_constraint_variables_available(self):
+        return self.runcase.constraint_variables.keys()
+    #constraint = Instance(ConstraintVariable)
+    constraint_name = String
     value = Float
     pattern = String
     cmd = String
     editor = TableEditor(
         auto_size=False,
         columns=[ ObjectColumn(name='name', editable=False, label='Parameter'),
-                     ObjectColumn(name='constraint_name', label='Constraint'),
-                     ObjectColumn(name='value', editable=False, label='Value')
+                     ObjectColumn(name='constraint_name', label='Constraint', editor=EnumEditor(name='constraint_variables_available')),
+                     ObjectColumn(name='value', label='Value', editor=TextEditor(evaluate=float, enter_set=True, auto_set=False))
                     ])
 
 
 class RunCase(HasTraits):
     patterns = {'name':re.compile(r"""Operation of run case (?P<case_num>\d+)/(?P<num_cases>\d+):\s*(?P<case_name>.+?)\ *?\n"""),
-                'constrained':re.compile(r"""(?P<cmd>[A-Z0-9]+)\s+(?P<pattern>.+?)\s+->\s+(?P<constraint>\S+)\s+=\s+(?P<val>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)"""),
-                'constraint':re.compile(r"""(?P<sel>->)?\s*(?P<cmd>[A-Z0-9])+\s+(?P<pattern>.+?)\s+=\s+(?P<val>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)"""),
+                'constraint':re.compile(r"""(?P<cmd>[A-Z0-9]+)\s+(?P<pattern>.+?)\s+->\s+(?P<constraint>\S+)\s+=\s+(?P<val>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)"""),
+                'constraint_variable':re.compile(r"""(?P<sel>->)?\s*(?P<cmd>[A-Z0-9]+)\s+(?P<pattern>.+?)\s+=\s+(?P<val>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)"""),
                 'parameter':re.compile(r"""(?P<cmd>[A-Z]+)\s+(?P<pattern>.+?)\s+=\s+(?P<val>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)(\ +(?P<unit>\S+))?"""),
                 'var':re.compile(r"""(?P<name>\S+?)\s*?=\s*?(?P<value>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)"""),
                 'float':re.compile(r'(?P<value>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)'),
@@ -68,6 +84,16 @@ class RunCase(HasTraits):
     number = Int
     name = String
     output = Dict(String, Float, {})
+    
+    
+    parameter_view = Property(List(Parameter), depends_on='parameters[]')
+    constraint_view = Property(List(Constraint), depends_on='parameters[]')
+    @cached_property
+    def _get_parameter_view(self):
+        return self.parameters.values()
+    @cached_property
+    def _get_constraint_view(self):
+        return self.constraints.values()
     
     traits_view = View(Group(Item('number', style='readonly'),
                              Item('name')),
@@ -80,119 +106,51 @@ class RunCase(HasTraits):
     parameters = Dict(String, Instance(Parameter), {})
     # pattern:name ; Predefined parameters to have good names
     parameter_names = Dict(String, String, {})
-    # name:(cmd,pattern,unit)
-    #parameters_info = Dict(String, Tuple(String, String, String), {})
     
-    # TODO: fixit
-    # name:pattern
-    constrained_params = Property(Dict(String, String), depends_on='constrained_patterns')
-    @cached_property
-    def _get_constrained_params(self):
-        return self.constrained_patterns.keys()
     
-    # name:pattern
-    constrained_patterns = Dict(String, String, {'alpha':'lpha', 'beta':'eta',
-                            'roll rate':'oll  rate', 'pitch rate':'itch rate',
-                            'yaw rate':'aw   rate'})
-    # auto-detect cmd from patterns
-    #constrained_cmd = Dict(String, String, {'alpha':'A', 'beta':'B', 'roll rate':'R',
-    #                        'pitch rate':'P', 'yaw rate':'Y'})
-    # name:cmd
-    constrained_cmd = Property(Dict, depends_on='constrained_patterns')
-    @cached_property
-    def _get_constrained_cmd(self):
-        self.avl.sendline('oper')
-        self.avl.expect(AVL.patterns['/oper'])
-        self.avl.sendline(str(self.number))
-        self.avl.expect(AVL.patterns['/oper'])
-        lines = self.avl.before.readlines()
-        lines = [line.strip() for line in lines]
-        i1 = lines.index('------------      ------------------------')
-        i2 = lines.index('------------      ------------------------', i1 + 1)
-        constraint_lines = lines[i1 + 1:i2]
-        groups = [re.match(RunCase.patterns['constrained'], line).groupdict() for line in constraint_lines]
-        cmds = {}
-        patterns = {}
-        for group in groups:
-            patterns[group['pattern']] = group['cmd']
-        for param, pattern in self.constrained_params.iteritems():
-            cmds[param] = patterns[pattern]
-        AVL.goto_state(self.avl)
-        return cmds
     
-    # TODO: fixit
-    # name:pattern
-    #constraint_vars = Property(Dict(String, String), depends_on='constraint_patterns')
-    @cached_property
-    def _get_constraint_vars(self):
-        return self.constraint_patterns.keys()
-    constraint_patterns = Dict(String, String, {'alpha':'alpha', 'beta':'beta',
-                            'roll rate':'pb/2V', 'yaw rate':'rb/2V', 'pitch rate':'qc/2V',
-                            'lift coeff':'CL', 'side force coeff':'CY', 'roll coeff':'Cl roll mom',
-                            'pitch coeff':'Cm pitchmom', 'yaw coeff':'Cn yaw  mom'})
-    # constraint:cmd
-    constraint_cmd = Property(Dict, depends_on='constraint_patterns')
-    @cached_property
-    def _get_constraint_cmd(self):
-        self.avl.sendline('oper')
-        self.avl.expect(AVL.patterns['/oper'])
-        self.avl.sendline(str(self.number))
-        self.avl.expect(AVL.patterns['/oper'])
-        self.avl.sendline('a')
-        self.avl.expect(AVL.patterns['/oper/a'])
-        lines = self.avl.before.splitlines()
-        self.avl.sendline()
-        self.avl.expect(AVL.patterns['/oper'])
-        lines = [line.strip() for line in lines]
-        i1 = lines.index('- - - - - - - - - - - - - - - - -')
-        i2 = lines.index('', i1 + 1)
-        constraint_lines = lines[i1 + 1:i2]
-        groups = [re.match(RunCase.patterns['constraint'], line).groupdict() for line in constraint_lines]
-        cmds = {}
-        patterns = {}
-        for group in groups:
-            patterns[group['pattern']] = group['cmd']
-        for param, pattern in self.constrained_params.iteritems():
-            cmds[param] = patterns[pattern]
-        AVL.goto_state(self.avl)
-        return cmds
-    
-    # constraints are corresponding to to the params in constraint_params
+    # constraints are corresponding to to the params in constraint_names
     # constrained : constraint_name, value
-    constraints = Dict(String, Tuple(String, Float),
-                                {'alpha': ('alpha', 0.0),
-                                 'beta': ('beta', 0.0),
-                                 'roll rate': ('roll rate', 0.0),
-                                 'yaw rate': ('yaw rate', 0.0),
-                                 'pitch rate': ('pitch rate', 0.0)}
-                        )
+    constraints = Dict(String, Instance(Constraint), {})
     
-    parameter_view = Property(List(Parameter), depends_on='parameters[]')
-    constraint_view = Property(List(Constraint), depends_on='parameters[]')
-    @cached_property
-    def _get_parameter_view(self):
-        return self.parameters.values()
-    def _get_constraint_view(self):
-        l = []
-        return l
+    # pattern:name
+    constraint_names = Dict(String, String, {'lpha':'alpha', 'eta':'beta',
+                            'oll  rate':'roll rate', 'itch rate':'pitch rate',
+                            'aw   rate':'yaw rate'})
     
-    @on_trait_change('constraints[]')
+    constraint_variables = Dict(String, Instance(ConstraintVariable), {})
+    
+    constraint_variable_names = Dict(String, String, {'CL': 'lift coeff',
+                                             'CY': 'side force coeff',
+                                             'Cl roll mom': 'roll coeff',
+                                             'Cm pitchmom': 'pitch coeff',
+                                             'Cn yaw  mom': 'yaw coeff',
+                                             'alpha': 'alpha',
+                                             'beta': 'beta',
+                                             'pb/2V': 'roll rate',
+                                             'qc/2V': 'pitch rate',
+                                             'rb/2V': 'yaw rate'})
+    
+    
+    @on_trait_change('constraints.[value,constraint_name]')
     def update_constraints(self):
         print 'constraints changed'
-        self.avl.sendline('oper')
-        self.avl.sendline()
-        self.avl.expect(AVL.patterns['/'])
-        for p, c in self.constraints.iteritems():
-            p1 = self.constraint_cmd[p]
-            c1 = self.constrained_cmd[c[0]]
+        #self.avl.sendline('oper')
+        #self.avl.sendline()
+        #self.avl.expect(AVL.patterns['/'])
+        for name, constraint in self.constraints.iteritems():
+            ccmd = constraint.cmd
+            vcmd = self.constraint_variables[constraint.constraint_name].cmd
+            val = constraint.value
             self.avl.sendline('oper')
             self.avl.expect(AVL.patterns['/oper'])
-            self.avl.sendline('%s %s %f' % (p1, c1, c[1]))
+            self.avl.sendline('%s %s %f' % (ccmd, vcmd, val))
             self.avl.expect(AVL.patterns['/oper'])
         AVL.goto_state(self.avl)
     
-    @on_trait_change('parameters[]')
+    @on_trait_change('parameters.[value]')
     def update_parameters(self):
+        print 'parameters changed'
         self.avl.sendline('oper')
         self.avl.sendline('m')
         self.avl.expect(AVL.patterns['/oper/m'])
@@ -209,8 +167,9 @@ class RunCase(HasTraits):
                 self.avl.sendline('%s %f' % (cmd, v.value))
         AVL.goto_state(self.avl)
     
+    #returns pattern:cmd
     @classmethod
-    def get_constraint_params_from_avl(cls, avl, case_num=1):
+    def get_constraint_variables_from_avl(cls, avl, case_num=1):
         avl.sendline('oper')
         avl.expect(AVL.patterns['/oper'])
         avl.sendline(str(case_num))
@@ -225,13 +184,17 @@ class RunCase(HasTraits):
         i1 = lines.index('- - - - - - - - - - - - - - - - -')
         i2 = lines.index('', i1 + 1)
         constraint_lines = lines[i1 + 1:i2]
-        params = [re.search(RunCase.patterns['constraint'], line).group('pattern') for line in constraint_lines]
+        groups = [re.search(RunCase.patterns['constraint_variable'], line).groupdict() for line in constraint_lines]
+        params = {}
+        for group in groups:
+            params[group['pattern']] = group['cmd']
         avl.sendline()
         AVL.goto_state(avl)
         return params
     
+    # return pattern:cmd,con_pattern,value
     @classmethod
-    def get_constrained_params_from_avl(cls, avl, case_num=1):
+    def get_constraints_from_avl(cls, avl, case_num=1):
         avl.sendline('oper')
         avl.expect(AVL.patterns['/oper'])
         avl.sendline(str(case_num))
@@ -244,7 +207,10 @@ class RunCase(HasTraits):
         i1 = lines.index('------------      ------------------------')
         i2 = lines.index('------------      ------------------------', i1 + 1)
         constraint_lines = lines[i1 + 1:i2]
-        params = [re.match(RunCase.patterns['constrained'], line).group('pattern') for line in constraint_lines]
+        groups = [re.match(RunCase.patterns['constraint'], line).groupdict() for line in constraint_lines]
+        params = {}
+        for group in groups:
+            params[group['pattern']] = (group['cmd'], group['constraint'], group['val'])
         AVL.goto_state(avl)
         return params
     
@@ -260,14 +226,27 @@ class RunCase(HasTraits):
         AVL.goto_state(avl)
         runcase = RunCase(name=name, number=case_num)
         runcase.avl = avl
-        constrained_params = RunCase.get_constrained_params_from_avl(avl, case_num)
-        for constrained_param in constrained_params:
-            if constrained_param not in runcase.constrained_patterns.values():
-                runcase.constrained_patterns[constrained_param] = constrained_param
-        constraint_params = RunCase.get_constraint_params_from_avl(avl, case_num)
-        for constraint_param in constraint_params:
-            if constraint_param not in runcase.constraint_patterns.values():
-                runcase.constraint_patterns[constraint_param] = constraint_param
+        
+        constraint_vars = RunCase.get_constraint_variables_from_avl(avl, case_num)
+        for constraint_var in constraint_vars:
+            if constraint_var not in runcase.constraint_variable_names:
+                runcase.constraint_variable_names[constraint_var] = constraint_var
+            constraint_name = runcase.constraint_variable_names[constraint_var]
+            runcase.constraint_variables[constraint_name] = ConstraintVariable(
+                                name=constraint_name, pattern=constraint_var,
+                                cmd=constraint_vars[constraint_var])
+        
+        constraints = RunCase.get_constraints_from_avl(avl, case_num)
+        rc_constraints = {}
+        for constraint_pattern,constraint_info in constraints.iteritems():
+            if constraint_pattern not in runcase.constraint_names:
+                runcase.constraint_names[constraint_pattern] = constraint_pattern
+            constraint_name = runcase.constraint_names[constraint_pattern]
+            rc_constraints[constraint_name] = Constraint(name=constraint_name,
+                                pattern=constraint_pattern, cmd=constraint_info[0],
+                                constraint_name=runcase.constraint_variable_names[constraint_info[1]],
+                                value=float(constraint_info[2]), runcase=runcase)
+        runcase.constraints.update(rc_constraints)
         RunCase.get_parameters_info_from_avl(runcase, avl)
         AVL.goto_state(avl)
         return runcase

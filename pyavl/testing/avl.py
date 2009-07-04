@@ -52,8 +52,10 @@ class Test(unittest.TestCase):
         rc = self.avl.run_cases[0]
         c = rc.constraints
         print c
-        c['alpha'] = ('alpha', 1.1)
-        assert c['alpha'] == ('alpha', 1.1)
+        c['alpha'] = avl.Constraint(name='alpha', constraint_name='alpha', cmd='A', pattern='alpha', value=1.1)
+        assert c['alpha'].value == 1.1
+        assert c['alpha'].name == 'alpha'
+        assert c['alpha'].pattern == 'alpha'
         #p = rc.parameters_info['bank']
         #rc.parameters['bank'] = 2.2
         #assert 'bank' in rc.parameters
