@@ -18,7 +18,11 @@ from pyavl.case import Case
 from pyavl.mass import Mass
 #from pyavl.runcase import RunCase
 
-    
+import logging
+# Logging.
+logger = logging.getLogger(__name__)
+
+
 class EigenMode(HasTraits):
     eigenvalue = Complex()
     # the = theta
@@ -423,8 +427,10 @@ class AVL(HasTraits):
         self.avl.expect(AVL.patterns['/oper'])
         num_cases = int(self.avl.match.group('num_cases'))
         AVL.goto_state(self.avl)
+        runcases = []
         for case_num in xrange(1, num_cases + 1):
-            self.run_cases.append(RunCase.get_case_from_avl(self.avl, case_num))
+            runcases.append(RunCase.get_case_from_avl(self.avl, case_num))
+        self.run_cases = runcases
         self.selected_case = 1
     
     def load_case_from_file(self, filename):
@@ -432,7 +438,7 @@ class AVL(HasTraits):
         if os.path.isabs(filename):
             f = open(filename)
         else:
-            f = open(os.path.join([self.cwd, filename]))
+            f = open(os.path.join(self.cwd, filename))
         self.case = Case.case_from_input_file(f, cwd=self.cwd)
         f.close()
         AVL.goto_state(self.avl)

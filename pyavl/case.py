@@ -49,9 +49,9 @@ class Case(HasTraits):
                        Item('CD_p')
                        )
     
-    @cached_property
-    def _get_geometries(self):
-        return [self.geometry] if self.geometry is not None else []
+    #@cached_property
+    #def _get_geometries(self):
+    #    return [self.geometry] if self.geometry is not None else []
     controls = DelegatesTo('geometry')
     
     def write_input_file(self, file):
@@ -60,9 +60,9 @@ class Case(HasTraits):
         '''
         file.write(self.name + '\n')
         file.write('#Mach no\n%f\n' % self.mach_no)
-        file.write('#iYsym\tiZsym\tZsym\n%d\t%d\t%f\n' % tuple(self.symmetry))
-        file.write('#Sref\tCref\tBref\n%f\t%f\t%f\n' % (self.ref_area, self.ref_chord, self.ref_span))
-        file.write('#Xref\tYref\tZref\n%f\t%f\t%f\n' % tuple(self.ref_cg))
+        file.write('#iYsym    iZsym    Zsym\n%d    %d    %f\n' % tuple(self.symmetry))
+        file.write('#Sref    Cref    Bref\n%f    %f    %f\n' % (self.ref_area, self.ref_chord, self.ref_span))
+        file.write('#Xref    Yref    Zref\n%f    %f    %f\n' % tuple(self.ref_cg))
         if self.CD_p != 0.0:
             file.write('#CD_p profile drag coefficient\n%f\n' % self.CD_p)
         file.write('\n')

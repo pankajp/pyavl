@@ -13,7 +13,7 @@ from pyavl.utils.naca4_plotter import get_NACA4_data
 
 def is_sequence(obj):
      try:
-         test = object[0:0]
+         test = obj[0:0]
      except:
          return False
      else:
@@ -25,7 +25,8 @@ def write_vars(vars, obj, file):
         #attr = obj.__dict__.get(var,None)
         if attr is not None:
             if is_sequence(attr):
-                for i in attr: file.write('%s\t' % str(i))
+                file.write('%s\n' % (var.upper()))
+                for i in attr: file.write('%s    ' % str(i))
             else:
                 file.write('%s\n%s' % (var.upper(), str(attr)))
             file.write('\n')
@@ -40,8 +41,8 @@ class Control(HasTraits):
     def write_to_file(self, file):
         file.write('CONTROL\n')
         file.write('#Cname   Cgain  Xhinge  HingeVec      SgnDup\n')
-        file.write('%s\t%f\t%f\t' % (self.name, self.gain, self.x_hinge))
-        file.write('%f %f %f\t' % tuple(self.hinge_vec))
+        file.write('%s    %f    %f    ' % (self.name, self.gain, self.x_hinge))
+        file.write('%f %f %f    ' % tuple(self.hinge_vec))
         file.write('%f\n' % self.sign_dup)
         file.write('')
 
@@ -50,7 +51,7 @@ class DesignParameter(HasTraits):
     weigt = Float
     
     def write_to_file(self, file):
-        file.write('DESIGN\n%s\t%f\n' % (self.name, self.weight))
+        file.write('DESIGN\n%s    %f\n' % (self.name, self.weight))
 
 class SectionData(HasTraits):
     def write_to_file(self, file):
@@ -67,7 +68,7 @@ class SectionAFILEData(SectionData):
     
     def write_to_file(self, file):
         file.write('AFILE')
-        if self.x_range != [0.0, 1.0]: file.write('\t%f\t%f' % tuple(self.x_range))
+        if self.x_range != [0.0, 1.0]: file.write('    %f    %f' % tuple(self.x_range))
         file.write('\n%s\n' % self.filename)
     
     def get_data_points(self):
@@ -79,9 +80,9 @@ class SectionAIRFOILData(SectionData):
     
     def write_to_file(self, file):
         file.write('AIRFOIL')
-        if self.x_range != [0.0, 1.0]: file.write('\t%f\t%f' % self.x_range)
+        if self.x_range != [0.0, 1.0]: file.write('    %f    %f' % self.x_range)
         file.write('\n')
-        for point in self.data: file.write('%f\t%f\n' % point)
+        for point in self.data: file.write('%f    %f\n' % point)
         file.write('\n')
     
     def get_data_points(self):
@@ -138,15 +139,15 @@ class Section(HasTraits):
         # TODO: implement
         file.write('SECTION\n')
         file.write('#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]\n')
-        file.write('%f\t%f\t%f' % tuple(self.leading_edge))
-        file.write('\t%f\t%f' % (self.chord, self.angle))
-        if self.svortices[0] != 0: file.write('\t%d\t%f' % tuple(self.svortices))
+        file.write('%f    %f    %f' % tuple(self.leading_edge))
+        file.write('    %f    %f' % (self.chord, self.angle))
+        if self.svortices[0] != 0: file.write('    %d    %f' % tuple(self.svortices))
         file.write('\n')
         self.data.write_to_file(file)
         if numpy.any(numpy.isnan(self.cd_cl)):
             file.write('CDCL\n')
             for point in self.cd_cl:
-                file.write('%f\t%f\n' % point)
+                file.write('%f    %f\n' % point)
         if self.claf != 0.0: file.write('CLAF\n%f\n' % self.claf)
         for design_param in self.design_params: design_param.write_to_file(file)
         for control in self.controls: control.write_to_file(file)
@@ -267,7 +268,9 @@ class Body(HasTraits):
     def write_to_file(self, file):
         file.write('BODY\n')
         file.write('%s\n' % self.name)
-        write_vars(['yduplicate', 'scale', 'translate'], self, file)
+        if numpy.isfinite(self.yduplicate):
+            write_vars(['yduplicate'], self, file)
+        write_vars(['scale', 'translate'], self, file)
         file.write('BFILE\n')
         file.write('%s\n' % self.filename)
         file.write('')
@@ -275,11 +278,11 @@ class Body(HasTraits):
         file.write('')
     
     @classmethod
-    def create_from_lines(cls, lines, lineno):
+    def create_from_lines(cls, lines, lineno, cwd=cwd):
         name = lines[lineno + 1]
         sources = lines[lineno + 2].split()
         lsources = [int(sources[0]), float(sources[1])]
-        body = Body(name=name, lsources=lsources)
+        body = Body(name=name, lsources=lsources, cwd=cwd)
         lineno += 3
         numlines = len(lines)
         while lineno < numlines:
@@ -335,11 +338,13 @@ class Surface(HasTraits):
         file.write('SURFACE\n')
         file.write(self.name)
         file.write('\n')
-        file.write('# Nchord\tCspace\t[ Nspan\tSspace ]\n')
-        file.write('%d\t%f' % tuple(self.cvortices))
-        if self.svortices[0] != 0: file.write('\t%d\t%f' % (self.svortices[0], self.svortices[1]))
+        file.write('# Nchord    Cspace    [ Nspan    Sspace ]\n')
+        file.write('%d    %f' % tuple(self.cvortices))
+        if self.svortices[0] != 0: file.write('    %d    %f' % (self.svortices[0], self.svortices[1]))
         file.write('\n')
-        write_vars(['index', 'yduplicate', 'scale', 'translate', 'angle'], self, file)
+        if numpy.isfinite(self.yduplicate):
+            write_vars(['yduplicate'], self, file)
+        write_vars(['index', 'scale', 'translate', 'angle'], self, file)
         for section in self.sections:
             section.write_to_file(file)
             file.write('\n')
@@ -360,7 +365,7 @@ class Surface(HasTraits):
         while lineno < numlines:
             cmd = lines[lineno]
             if cmd.startswith('INDE'):
-                surface.index = float(lines[lineno + 1])
+                surface.index = int(lines[lineno + 1])
                 lineno += 2
             elif cmd.startswith('YDUP'):
                 surface.yduplicate = float(lines[lineno + 1])
