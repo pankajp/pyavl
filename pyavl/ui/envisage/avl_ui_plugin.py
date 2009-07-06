@@ -11,7 +11,8 @@ The pyAVL UI plugin.
 from enthought.envisage.api import Plugin
 from enthought.pyface.workbench.api import Perspective, PerspectiveItem
 from enthought.pyface.workbench.api import TraitsUIView
-from enthought.traits.api import List
+from enthought.traits.api import List, Any, Instance, on_trait_change
+#from pyavl.avl import AVL
 
 
 class AVLPerspective(Perspective):
@@ -62,7 +63,27 @@ class AVLUIPlugin(Plugin):
         """ Trait initializer. """
         
         return [self._create_tree_view, self._create_geometry_view, self._create_section_view]#, self._create_plot2d_view]
-
+    
+    avl = Any()
+    
+    def _avl_default(self):
+        return self.application.get_service('pyavl.avl.AVL')
+    
+    geometry_view = Any()
+    
+    def _geometry_view_default(self):
+        from pyavl.ui.geometry_viewer import GeometryViewer
+        geometry_view = TraitsUIView(
+            id='pyavl.geometry',
+            name='Geometry View',
+            obj=GeometryViewer(geometry=self.avl.case.geometry)
+        )
+        return geometry_view
+    
+    @on_trait_change('avl.case.geometry')
+    def update_geometry_view(self):
+        self.geometry_view.obj.geometry = self.avl.case.geometry
+    
     ###########################################################################
     # Private interface.
     ###########################################################################
@@ -85,15 +106,15 @@ class AVLUIPlugin(Plugin):
         return tree_view
     
     def _create_geometry_view(self, **traits):
-        from pyavl.ui.geometry_viewer import GeometryViewer
-        geometry_view = TraitsUIView(
-            id='pyavl.geometry',
-            name='Geometry View',
-            obj=GeometryViewer(geometry=self.application.get_service('pyavl.avl.AVL').case.geometry),
-            **traits
-        )
+        #from pyavl.ui.geometry_viewer import GeometryViewer
+        #geometry_view = TraitsUIView(
+        #    id='pyavl.geometry',
+        #    name='Geometry View',
+        #    obj=GeometryViewer(geometry=self.application.get_service('pyavl.avl.AVL').case.geometry),
+        #    **traits
+        #)
 
-        return geometry_view
+        return self.geometry_view
     
     
     def _create_section_view(self, **traits):

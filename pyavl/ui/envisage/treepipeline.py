@@ -22,13 +22,14 @@ from pyavl.avl import AVL, RunCase
 from pyavl.case import Case
 from pyavl.geometry import Geometry, Surface, Section, Body
 
+from handler import AVLHandler
+
 # Enthought library imports.
 from enthought.traits.api import HasTraits, Property, Any, Float, Instance, \
-                             Trait, List, Str, Dict, Python
+                             Trait, List, Str, Dict, Python, on_trait_change
 from enthought.traits.ui.api import \
      TreeEditor, TreeNodeObject, ObjectTreeNode, View, Item, Group, UI
-from enthought.traits.ui.menu import Menu, Action
-
+from enthought.traits.ui.menu import ToolBar, Action, Menu
 from enthought.tvtk.api import tvtk
 from enthought.tvtk import messenger
 from enthought.tvtk.tvtk_base import TVTKBase
@@ -294,29 +295,7 @@ class TreeBranchNode(TreeNodeObject):
     def _create_children(self):
         kids = self.tree_generator.get_children(self.object)
         self.children_cache = kids
-        #self._setup_listners()
 
-    #def _setup_listners(self):
-    #    object = self.object
-    #    kids = self.children_cache
-    #    for key, val in kids.items():
-    #        if isinstance(val, tvtk.Collection):
-    #            vtk_obj = tvtk.to_vtk(val)
-    #            messenger.connect(vtk_obj, 'ModifiedEvent',
-    #                              self._notify_children)
-    #        else:
-    #            object.on_trait_change(self._notify_children, key)
-
-    #def _remove_listners(self):
-    #    object = self.object
-    #    kids = self.children_cache
-    #    for key, val in kids.items():
-    #        if isinstance(val, tvtk.Collection):
-    #            vtk_obj = tvtk.to_vtk(val)
-    #            messenger.disconnect(vtk_obj, 'ModifiedEvent',
-    #                                 self._notify_children)
-    #        else:
-    #            object.on_trait_change(self._notify_children, key, remove=True)
 
     def _notify_children(self, obj=None, name=None, old=None, new=None):
         old_val = self._get_children_from_cache()
@@ -406,7 +385,8 @@ class AVLTreeBrowser(HasTraits):
 
     # The TVTK render window(s) associated with this browser.
     avl = Instance(AVL)
-
+    
+    avlhandler = Instance(AVLHandler, AVLHandler())
     # The root object to view in the pipeline.  If None (default), the
     # root object is the render_window of the Scene instance passed at
     # object instantiation time.
@@ -457,7 +437,10 @@ class AVLTreeBrowser(HasTraits):
                          title='pyAVL',
                          help=False,
                          resizable=True, undo=False, revert=False,
-                         width=.3, height=.3)
+                         width=.3, height=.3,
+                         handler=self.avlhandler,
+                         toolbar=ToolBar(*self.avlhandler.toolbar_actions)
+                         )
 
     ###########################################################################
     # `PipelineBrowser` interface.
@@ -480,10 +463,12 @@ class AVLTreeBrowser(HasTraits):
                 self.ui = self.view.ui(self, parent=parent, kind='subpanel')
             else:
                 self.ui = self.view.ui(self, parent=parent)
-                
+    
+    #@on_trait_change('avl?.[(case?.geometry?.[bodies?,surfaces?.sections?])?,run_cases?]')
     def update(self):
         """Update the tree view."""
         # This is a hack.
+        logger.info('updating tree view')
         if self.ui and self.ui.control:
             try:
                 ed = self.ui._editors[0]
@@ -504,6 +489,11 @@ class AVLTreeBrowser(HasTraits):
                                   tree_generator=tree_gen)
         return node
 
+    #@on_trait_change('avl?,avl?.case?,avl?.case?.geometry?,avl?.run_cases?[],avl?.case?.geometry?.surfaces?[],avl?.case?.geometry?.surfaces?.sections?[],avl?.case?.geometry?.bodies?[]')
+    @on_trait_change('avl?,avl.case?')
+    def recreate_tree(self):
+        self._tree_generator_changed(self.tree_generator)
+    
     def _tree_generator_changed(self, tree_gen):
         """Traits event handler."""
         if self._root:
@@ -524,8 +514,10 @@ class AVLTreeBrowser(HasTraits):
         self.tree_editor.nodes = tree_gen.get_nodes(self.menu)
         self.update()
 
+    #@on_trait_change('avl.[(case.geometry.[bodies,surfaces.sections]),run_cases]')
     def _root_object_changed(self, root_obj):
         """Trait handler called when the root object is assigned to."""
+        logger.info('in _root_object_changed')
         tg = self.tree_generator
         if root_obj:
             self._root = TreeCollectionNode(object=root_obj, name="Root",

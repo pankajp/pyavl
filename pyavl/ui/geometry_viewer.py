@@ -201,7 +201,7 @@ class GeometryViewer(HasTraits):
         #self.plot = self.scene.mlab.plot3d(x, y, z, t, colormap='Spectral')
         self.update_plot()
 
-    @on_trait_change('surfaces')
+    @on_trait_change('geometry')
     def update_plot(self):
         self.plots = []
         #self.plot.mlab_source.set(x=x, y=y, z=z, scalars=t)

@@ -5,11 +5,29 @@ Created on Jun 30, 2009
 '''
 
 from enthought.traits.api import File, Enum, Tuple, HasTraits, DelegatesTo, Instance
-from enthought.traits.ui.api import View, Item
+from enthought.traits.ui.api import View, Item, FileEditor
 from enthought.traits.ui.menu import Action
 from enthought.chaco.tools.api import SaveTool
 
 import os
+
+import logging
+# Logging.
+logger = logging.getLogger(__name__)
+
+
+class FileName(HasTraits):
+    filename = File()
+    traits_view = View(Item('filename'), buttons=['OK', 'Cancel'])
+
+def get_file_from_user(cwd=None, filter=None, entries=0):
+    filename = FileName(filename='')
+    f = filename.configure_traits(view=View(Item('filename', editor=FileEditor(entries=entries, filter=filter)),
+                                buttons=['OK', 'Cancel'], width=500, height=200), kind='modal')
+    if f:
+        return filename.filename
+    else:
+        return None
 
 class CustomSaveTool(SaveTool):
     """ This tool allows the user to press Ctrl+S to save a snapshot image of
@@ -32,7 +50,7 @@ class CustomSaveTool(SaveTool):
     #-------------------------------------------------------------------------
 
     pagesize = Enum("letter", "A4")
-    dest_box = Tuple((0.5, 0.5, -0.5, -0.5))
+    dest_box = Tuple((0.5, 0.5, - 0.5, - 0.5))
     dest_box_units = Enum("inch", "cm", "mm", "pica")
 
     #-------------------------------------------------------------------------
@@ -54,8 +72,14 @@ class CustomSaveTool(SaveTool):
             return
 
         if event.character == "s" and event.control_down:
-            if self.filenameview.configure_traits(view=View(Item('filename'), buttons=['OK','Cancel']), kind='modal'):
-                if os.path.splitext(self.filename)[-1] == ".pdf":
+            if self.filenameview.configure_traits(view=View(Item('filename', editor=FileEditor(entries=0,
+                                    filter=['PNG file (*.png)|*.png',
+                                            'GIF file (*.gif)|*.gif',
+                                            'JPG file (*.jpg)|*.jpg',
+                                            'JPEG file (*.jpeg)|*.jpeg',
+                                            'PDF file (*.pdf)|*.pdf'])),
+                                buttons=['OK', 'Cancel']), kind='modal'):
+                if os.path.splitext(self.filename)[ - 1] == ".pdf":
                     self._save_pdf()
                 else:
                     self._save_raster()
@@ -74,9 +98,9 @@ class CustomSaveTool(SaveTool):
     def _save_pdf(self):
         from enthought.chaco.pdf_graphics_context import PdfPlotGraphicsContext
         gc = PdfPlotGraphicsContext(filename=self.filename,
-                pagesize = self.pagesize,
-                dest_box = self.dest_box,
-                dest_box_units = self.dest_box_units)
+                pagesize=self.pagesize,
+                dest_box=self.dest_box,
+                dest_box_units=self.dest_box_units)
         gc.render_component(self.component, container_coords=True)
         gc.save()
 
