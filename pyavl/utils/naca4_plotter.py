@@ -49,7 +49,11 @@ def get_NACA_data(p=0.05, m=0.5, xx=0.1, nv=100, nvbl=10, le=0.01):
             else:                # x distribution after le
                 x = le + (1.0-le)*(i-nvbl+1.0)/(nv-nvbl+1.0)
             if x <= m:            # camber line equation before max camber
-                yc = (p/m**2.0) * ((2.0*m*x)-(x*x))
+                # Edit: added condition - pankaj
+                if m>0:
+                    yc = (p/m**2.0) * ((2.0*m*x)-(x*x))
+                else:
+                    yc = 0
             else:                # after maxcamber
                 yc = (p/((1-m)**2.0))*((1.0-2.0*m) + 2.0*m*x - x**2.0)
             yt = (xx/0.2)*(a0*x**(0.5) + a1*x + a2*x**2.0 + a3*x**3.0 + a4*x**4.0)    # thickness equation
@@ -61,7 +65,11 @@ def get_NACA_data(p=0.05, m=0.5, xx=0.1, nv=100, nvbl=10, le=0.01):
             else:
                 x = le*(1.0-(i-2.0*nv+nvbl)/(nvbl-1.0))
             if x <= m:
-                yc = (p/m**2.0) * ((2.0*m*x)-(x)**2.0)
+                # Edit: added condition - pankaj
+                if m>0:
+                    yc = (p/m**2.0) * ((2.0*m*x)-(x)**2.0)
+                else:
+                    yc = 0
             else:
                 yc = (p/((1-m)**2.0))*((1.0-2.0*m) + 2.0*m*x - x**2.0)
             yt = (xx/0.2)*(a0*x**(0.5) + a1*x + a2*x**2.0 + a3*x**3.0 + a4*x**4.0)
