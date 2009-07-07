@@ -48,7 +48,7 @@ class Control(HasTraits):
 
 class DesignParameter(HasTraits):
     name = Str('Unnamed Design Parameter')
-    weigt = Float
+    weight = Float
     
     def write_to_file(self, file):
         file.write('DESIGN\n%s    %f\n' % (self.name, self.weight))
@@ -57,6 +57,9 @@ class SectionData(HasTraits):
     def write_to_file(self, file):
         pass
     
+    data_points = Array(numpy.float, ((2, None), 2), numpy.array([[0.0, 0.0],
+                                                                  [1.0, 0.0]]))
+    traits_view = View()
     def get_data_points(self):
         return numpy.array([[0.0, 0.0],
                       [1.0, 0.0]])
@@ -65,6 +68,14 @@ class SectionAFILEData(SectionData):
     filename = File
     x_range = List(Float, [0.0, 1.0], 2, 2)
     cwd = Directory('')
+    data_points = Property(Array(numpy.float, ((2, None), 2), numpy.array([[0., 0.], [1., 0.]])), depends_on='filename')
+    traits_view = View(['filename','cwd','x_range'])
+    @cached_property
+    def _get_data_points(self):
+        try:
+            return numpy.loadtxt(open(os.path.join(self.cwd, self.filename)), skiprows=1)
+        except:
+            return numpy.array([[0., 0.], [1., 0.]])
     
     def write_to_file(self, file):
         file.write('AFILE')
@@ -72,12 +83,12 @@ class SectionAFILEData(SectionData):
         file.write('\n%s\n' % self.filename)
     
     def get_data_points(self):
-        return numpy.loadtxt(open(os.path.join(self.cwd, self.filename)), skiprows=1)
+        return self.data_points
 
 class SectionAIRFOILData(SectionData):
-    data = Array(numpy.float, ((2, None), 2), numpy.array([[0., 0.], [1., 0.]]))
+    data_points = Array(numpy.float, ((2, None), 2), numpy.array([[0., 0.], [1., 0.]]))
     x_range = List(Float, [0.0, 1.0], 2, 2)
-    
+    traits_view = View(['data_points','x_range'])
     def write_to_file(self, file):
         file.write('AIRFOIL')
         if self.x_range != [0.0, 1.0]: file.write('    %f    %f' % self.x_range)
@@ -86,20 +97,25 @@ class SectionAIRFOILData(SectionData):
         file.write('\n')
     
     def get_data_points(self):
-        return data
+        return self.data_points
     
 class SectionNACAData(SectionData):
     number = Int
+    data_points = Property(Array(numpy.float, ((2, None), 2), numpy.array([[0., 0.], [1., 0.]])), depends_on='number')
+    traits_view = View(['number'])
+    @cached_property
+    def _get_data_points(self):
+        return NACA4_data(self.number)
     
     def write_to_file(self, file):
         file.write('NACA\n%d\n' % self.number)
     
     def get_data_points(self):
-        return get_NACA4_data(self.number)
+        return self.data_points
 
 class Section(HasTraits):
     '''
-    Class representing a section of a section (flat plate)
+    Class representing a section of a surface (flat plate)
     '''
     leading_edge = Array(numpy.float, (3,))
     chord = Float

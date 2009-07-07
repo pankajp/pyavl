@@ -392,6 +392,8 @@ class AVLTreeBrowser(HasTraits):
     # object instantiation time.
     root_object = List()
     
+    selected = Any
+    
     # Private traits.
     # The root of the tree to display.
     _root = Any
@@ -427,7 +429,8 @@ class AVLTreeBrowser(HasTraits):
         self.tree_editor = TreeEditor(nodes=nodes,
                                       orientation='vertical',
                                       hide_root=True,
-                                      on_dclick=self._on_dclick)
+                                      on_dclick=self._on_dclick,
+                                      selected='selected')
         self.view = View(Group(Item(name='_root',
                                     editor=self.tree_editor,
                                     resizable=True),

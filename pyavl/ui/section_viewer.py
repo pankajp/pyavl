@@ -25,29 +25,31 @@ class SectionViewer(HasTraits):
     section = Instance(Section)
     plot = Instance(Plot)
     plotdata = Instance(ArrayPlotData, kw={'x':numpy.array([]),'y':numpy.array([])})
-    pointsx = Array(numpy.float, value=numpy.array([]))
-    pointsy = Array(numpy.float, value=numpy.array([]))
-    data = Property(Array, depends_on='section.data')
+    #pointsx = Array(numpy.float, value=numpy.array([]))
+    #pointsy = Array(numpy.float, value=numpy.array([]))
+    data = Property(Array, depends_on='section.data.data_points')
     @cached_property
     def _get_data(self):
         try:
-            ret = self.section.data.get_data_points()
-            self.pointsx = ret[:, 0]
-            self.pointsy = ret[:, 1]
+            ret = self.section.data.data_points
+            #self.pointsx = ret[:, 0]
+            #self.pointsy = ret[:, 1]
+            self.plotdata.set_data('x', ret[:,0])
+            self.plotdata.set_data('y', ret[:,1])
             return ret
         except AttributeError:
             return numpy.Array([[],[]])
     
     @on_trait_change('data')
-    def plot(self):
-        plot.title = 'Section : %s' % self.section.type
+    def replot(self):
+        print 'in SectionViewer.plot'
+        self.plot.title = 'Section : %s' % self.section.type
         self.plot.request_redraw()
         
     def __init__(self, *l, **kw):
         # TODO: implement aspect ratio maintaining
         HasTraits.__init__(self, *l, **kw)
-        plotdata = ArrayPlotData(x=self.pointsx, y=self.pointsy)
-        self.plotdata = plotdata
+        #self.plotdata = ArrayPlotData(x=self.pointsx, y=self.pointsy)
         plot = Plot(self.plotdata)
         renderer = plot.plot(("x", "y"))
         

@@ -13,6 +13,11 @@ from enthought.pyface.workbench.api import Perspective, PerspectiveItem
 from enthought.pyface.workbench.api import TraitsUIView
 from enthought.traits.api import List, Any, Instance, on_trait_change
 #from pyavl.avl import AVL
+from pyavl.geometry import Section
+
+import logging
+# Logging.
+logger = logging.getLogger(__name__)
 
 
 class AVLPerspective(Perspective):
@@ -69,7 +74,25 @@ class AVLUIPlugin(Plugin):
     def _avl_default(self):
         return self.application.get_service('pyavl.avl.AVL')
     
+    tree_view = Any()
     geometry_view = Any()
+    section_view = Any()
+    
+    def _tree_view_default(self):
+        from pyavl.ui.envisage.treepipeline import AVLTreeBrowser
+        from pyavl.ui.envisage.avl_tree_ui_view import AVLTreeUIView
+        obj = AVLTreeBrowser(avl=self.avl)
+        tree_view = AVLTreeUIView(
+            id='pyavl.tree',
+            name='Tree View',
+            view=obj.view,
+            obj=obj
+        )
+        return tree_view
+    
+    #@on_trait_change('avl.case.geometry')
+    #def update_geometry_view(self):
+    #    self.geometry_view.obj.geometry = self.avl.case.geometry
     
     def _geometry_view_default(self):
         from pyavl.ui.geometry_viewer import GeometryViewer
@@ -84,49 +107,37 @@ class AVLUIPlugin(Plugin):
     def update_geometry_view(self):
         self.geometry_view.obj.geometry = self.avl.case.geometry
     
+    def _section_view_default(self):
+        from pyavl.ui.section_viewer import SectionViewer
+        section_view = TraitsUIView(
+            id='pyavl.section',
+            name='Section View',
+            obj=SectionViewer(section=None)
+        )
+        return section_view
+    
+    @on_trait_change('tree_view.obj.selected')
+    def update_section_view(self):
+        selected = self.tree_view.obj.selected.object
+        logger.info('in update_section_view :' + str(selected))
+        if isinstance(selected, Section):
+            logger.info('updating view')
+            self.section_view.obj.section = selected
+    
     ###########################################################################
     # Private interface.
     ###########################################################################
 
     def _create_tree_view(self, **traits):
         """ Factory method for the data view. """
-
-        from pyavl.ui.envisage.treepipeline import AVLTreeBrowser
-        from pyavl.ui.envisage.avl_tree_ui_view import AVLTreeUIView
-        #from pyavl.ui.envisage.treepipeline import AVLTreeBrowserView
-        obj = AVLTreeBrowser(avl=self.application.get_service('pyavl.avl.AVL'))
-        tree_view = AVLTreeUIView(
-            id='pyavl.tree',
-            name='Tree View',
-            view=obj.view,
-            obj=obj,
-            **traits
-        )
-
-        return tree_view
+        return self.tree_view
     
     def _create_geometry_view(self, **traits):
-        #from pyavl.ui.geometry_viewer import GeometryViewer
-        #geometry_view = TraitsUIView(
-        #    id='pyavl.geometry',
-        #    name='Geometry View',
-        #    obj=GeometryViewer(geometry=self.application.get_service('pyavl.avl.AVL').case.geometry),
-        #    **traits
-        #)
-
         return self.geometry_view
     
     
     def _create_section_view(self, **traits):
-        from pyavl.ui.section_viewer import SectionViewer
-        section_view = TraitsUIView(
-            id='pyavl.section',
-            name='Section View',
-            obj=SectionViewer(section=None),
-            **traits
-        )
-
-        return section_view
+        return self.section_view
     
     
 #### EOF ######################################################################

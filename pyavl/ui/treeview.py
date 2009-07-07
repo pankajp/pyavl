@@ -15,14 +15,28 @@ from enthought.traits.ui.api import TreeEditor, TreeNode, TreeNodeObject, Item, 
 from enthought.traits.ui.value_tree import ObjectNode, TraitsNode 
 no_view = View()
 
+def selection_changed(selection):
+    print selection
 
 AVL_tree_editor = TreeEditor( 
     nodes = [
         TreeNode( node_for  = [ AVL ],
                   auto_open = True,
-                  children  = 'run_cases',
+                  children  = '',
                   label     = '=pyAVL',
+                  view      = no_view
+        ),
+        TreeNode( node_for  = [ AVL ],
+                  auto_open = True,
+                  children  = 'run_cases',
+                  label     = '=runcases',
                   view      = View( [ 'selected_runcase'] )
+        ),
+        TreeNode( node_for  = [ AVL ],
+                  auto_open = True,
+                  children  = '',
+                  label     = '=cases',
+                  view      = View( [ 'case'] )
         ),
         TreeNode( node_for  = [ RunCase ],
                   auto_open = True,
@@ -49,7 +63,9 @@ AVL_tree_editor = TreeEditor(
                   view      = no_view
         )
     ],
-    orientation='vertical'
+    orientation='vertical',
+    on_select = selection_changed,
+    selected = 'selected'
 )
 
 class AVLTreeView(HasTraits):
