@@ -17,7 +17,7 @@ import numpy
 
 def get_NACA4_data(number):
     p = (number // 1000) / 100.0
-    m = (number // 100)%10 / 100.0
+    m = (number // 100)%10 / 10.0
     xx = (number % 100) / 100.0
     return get_NACA_data(p, m, xx)
 

@@ -5,17 +5,16 @@ Created on Jul 3, 2009
 '''
 
 from numpy import float
-from enthought.traits.api import HasTraits, Tuple, List, Float, String
+from enthought.traits.api import HasTraits, Tuple, List, Float, String, on_trait_change
 from enthought.traits.ui.api import View, Item, ListEditor, TupleEditor, TextEditor
 
 #  Copyright (c) 2007, Enthought, Inc.
 #  License: BSD Style.# Imports:
-from enthought.traits.api \
-    import HasStrictTraits, Str, Int, Regex, List, Instance, cached_property, Property, Dict
+from enthought.traits.api import HasStrictTraits, Str, Int, Regex, List, Instance, cached_property, Property, Dict
     
 from enthought.traits.ui.api \
-    import View, Item, Tabbed, TableEditor, ListEditor
-    
+    import TreeEditor, TreeNodeObject, ObjectTreeNode, View, Item, Tabbed, TableEditor, ListEditor, Handler, Group
+from enthought.traits.ui.menu import ToolBar, Action, Menu, Separator
 from enthought.traits.ui.table_column \
     import ObjectColumn
     
@@ -23,28 +22,37 @@ from enthought.traits.ui.table_filter \
     import RuleTableFilter, RuleFilterTemplate, \
            MenuFilterTemplate, EvalFilterTemplate
 
+class Parameter(HasTraits):
+    name = String('name')
+    value = Float
+    def __str__(self): return '{%s:%f}' %(self.name,self.value)
+    def __repr__(self): return '{%s:%f}' %(self.name,self.value)
+    editor = TableEditor(
+        auto_size=False,
+        columns=[ObjectColumn(name='name', label='Name', editable=False),
+                 ObjectColumn(name='value', label='Value',
+            editor=TextEditor(evaluate=float, enter_set=True, auto_set=False)),
+            ])
 class C(HasTraits):
-    a = String
-    def __repr__(self):
-        return '<Instance class C>(a=%s)' % self.a
-
-class A(HasTraits):
-    d = Dict(String,Instance(C),{})
-    p = Property(List(String), depends_on='d')
-    @cached_property
-    def _get_p(self):
-        return self.d.keys()
-    traits_view = View(['d','p'])
-    def update(self,l):
-        for t in l:
-            self.d[t[0]] = C(a=t[2])
+    d = Dict(String, Instance(Parameter), {'p1':Parameter(name='p1',value=0.1),
+                                           'p2':Parameter(name='p2',value=0.2)})
+    d_view = List(Instance(Parameter))
+    def _d_view_default(self):
+        return self.d.values()
+    @on_trait_change('d.value')
+    def update_view(self):
+        print 'updating view'
+        self.d_view = self.d.values()
+    @on_trait_change('d_view.value')
+    def update_d(self):
+        print 'updating d'
     
-a = A()
-print a.d
-print a.p
-a.update([('Mach No',1.6,''),('Temperature',380,'K')])
-print a.d
-print a.p
-a.configure_traits()
-print a.d
-print a.p
+    view = View(Item('d_view', editor=Parameter.editor))
+
+c = C()
+c.configure_traits()
+print c.d, c.d_view
+c.d['p1'].value = 1.2
+print c.d, c.d_view
+c.d_view[0].value = 1.2
+print c.d, c.d_view

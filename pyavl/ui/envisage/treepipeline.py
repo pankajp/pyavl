@@ -418,11 +418,12 @@ class AVLTreeBrowser(HasTraits):
         self.view = None
         if avl:
             self.avl = avl
-
-        self._root_object_changed(self.root_object)
+        
         menu = Menu(Action(name='Refresh', action='editor.update_editor'),
                     Action(name='Expand all', action='editor.expand_all'))
         self.menu = menu
+
+        self._root_object_changed(self.root_object)
 
         nodes = self.tree_generator.get_nodes(menu)
         

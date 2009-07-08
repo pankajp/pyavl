@@ -8,10 +8,11 @@ import pexpect
 import os
 from enthought.traits.api import HasTraits, List, Float, Dict, String, Int, Tuple, \
     Enum, cached_property, Python, Property, on_trait_change, Complex, Array, Instance, \
-    Directory, ReadOnly, DelegatesTo, Any
+    Directory, ReadOnly, DelegatesTo, Any, Trait, Bool
 from enthought.traits.ui.api import View, Item, Group, VGroup, ListEditor, TupleEditor, \
     TextEditor, TableEditor, EnumEditor
 from enthought.traits.ui.table_column import ObjectColumn
+from enthought.traits.ui.menu import Action, ToolBar
 import re
 import numpy
 from pyavl.case import Case
@@ -74,6 +75,62 @@ class Constraint(HasTraits):
                      ObjectColumn(name='value', label='Value', editor=TextEditor(evaluate=float, enter_set=True, auto_set=False))
                     ])
 
+class TrimCase(HasTraits):
+    # Instance(RunCase)
+    runcase = Any()
+    type = Trait('horizontal flight', {'horizontal flight':'c1',
+                  'looping flight':'c2'})
+    parameters = Dict(String, Instance(Parameter))
+    parameter_view = List(Parameter, [])
+    traits_view = View(Group(Item('type')),
+                       Group(Item('parameter_view', editor=Parameter.editor, show_label=False), label='Parameters'),
+                        Item(), # so that groups are not tabbed
+                        kind='livemodal',
+                        buttons=['OK']
+                       )
+    #@on_trait_change('type,parameters[]')
+    def update_by_code(self):
+        if self._change_code:
+            return
+        self._change_code = True
+        self.update_parameters_from_avl()
+        self._change_code = False
+    
+    #@on_trait_change('type,parameters[]')
+    def update_by_ui(self):
+        if self._change_ui:
+            return
+        self._change_ui = True
+        self.update_parameters_from_avl()
+        self._change_ui = False
+    
+    #@on_trait_change('type,parameters.value')
+    def update_parameters_from_avl(self):
+        print 'in update_parameters_from_avl'
+        avl = self.runcase.avl
+        avl.sendline('oper')
+        avl.expect(AVL.patterns['/oper'])
+        avl.sendline(self.type_)
+        avl.expect(AVL.patterns['/oper/m'])
+        
+        constraint_lines = [line.strip() for line in avl.before.splitlines()]
+        i1 = constraint_lines.index('=================================================')
+        constraint_lines = constraint_lines[i1:]
+        print constraint_lines
+        groups = [re.search(RunCase.patterns['parameter'], line) for line in constraint_lines]
+        params = {}
+        for group in groups:
+            if group is not None:
+                group = group.groupdict()
+                pattern = group['pattern']
+                name = pattern
+                unit = group.get('unit', '')
+                unit = unit if unit is not None else ''
+                params[name] = Parameter(name=name, pattern=pattern, cmd=group['cmd'], unit=unit, value=float(group['val']))
+        AVL.goto_state(avl)
+        self.parameters.update(params)
+        self.parameter_view = params.values()
+        return self
 
 class RunCase(HasTraits):
     patterns = {'name':re.compile(r"""Operation of run case (?P<case_num>\d+)/(?P<num_cases>\d+):\s*(?P<case_name>.+?)\ *?\n"""),
@@ -88,8 +145,9 @@ class RunCase(HasTraits):
     number = Int
     name = String
     output = Dict(String, Float, {})
-    
-    
+    #not to be used separately apart from modal gui
+    #trim_runcase = Instance(TrimCase, TrimCase())
+    set_trim_case_action = Action(name='Set Trim Condition', tooltip='Set the runcase conditions for horizontal(+banked) or looping trim condition', action='set_trimcase')
     parameter_view = Property(List(Parameter), depends_on='parameters[]')
     constraint_view = Property(List(Constraint), depends_on='parameters[]')
     @cached_property
@@ -103,7 +161,8 @@ class RunCase(HasTraits):
                              Item('name')),
                        Group(Item('parameter_view', editor=Parameter.editor, show_label=False), label='Parameters'),
                        Group(Item('constraint_view', editor=Constraint.editor, show_label=False), label='Constraints'),
-                        Item() # so that groups are not tabbed
+                        Item(), # so that groups are not tabbed
+                        toolbar=ToolBar(set_trim_case_action)
                        )
     
     # name, value
@@ -135,8 +194,38 @@ class RunCase(HasTraits):
                                              'qc/2V': 'pitch rate',
                                              'rb/2V': 'yaw rate'})
     
+    trimcase = Instance(TrimCase, TrimCase())
     
-    @on_trait_change('constraints.[value,constraint_name]')
+    def set_trimcase(self, info=None):
+        print self
+        self.trimcase = TrimCase(runcase=self)
+        self.trimcase.update_parameters_from_avl()
+        self.trimcase.edit_traits()
+        self.get_parameters_info_from_avl(self.avl)
+    
+    @on_trait_change('trimcase.parameter_view.value,trimcase.type')
+    def on_trimcase_changed(self, object, name, old, new):
+        print object, name, old, new
+        print 'trimcase_changed'
+        if name == 'value':
+            self.update_trim_case(self.trimcase, object)
+            self.trimcase.update_parameters_from_avl()
+        elif name == 'type':
+            self.trimcase.update_parameters_from_avl()
+    
+    # send changed value of trimcase to avl, parameter is Parameter instance
+    def update_trim_case(self, trimcase, parameter):
+        print 'update_trim_case'
+        self.get_parameters_info_from_avl(self.avl)
+        self.avl.sendline('oper')
+        self.avl.sendline(trimcase.type_)
+        self.avl.expect(AVL.patterns['/oper/m'])
+        #print self.parameters.keys()
+        #for p, v in trimcase.parameters.iteritems():
+        self.avl.sendline('%s %f' % (parameter.cmd, parameter.value))
+        AVL.goto_state(self.avl)
+    
+    @on_trait_change('constraints.value,constraints.constraint_name')
     def update_constraints(self):
         print 'constraints changed'
         #self.avl.sendline('oper')
@@ -152,18 +241,19 @@ class RunCase(HasTraits):
             self.avl.expect(AVL.patterns['/oper'])
         AVL.goto_state(self.avl)
     
-    @on_trait_change('parameters.[value]')
+    @on_trait_change('parameters.value')
     def update_parameters(self):
         print 'parameters changed'
         self.avl.sendline('oper')
         self.avl.sendline('m')
         self.avl.expect(AVL.patterns['/oper/m'])
         #print self.parameters.keys()
-        tmpv = 0.001
         try:
-            tmpv = max(self.parameters['velocity'].value, 0.001)
+            tmpv = self.parameters['velocity'].value
+            if tmpv < 0.00001:
+                tmpv = 1.0
         except KeyError:
-            pass
+            tmpv = 1.0
         self.avl.sendline('V %f' % tmpv)
         for p, v in self.parameters.iteritems():
             cmd = self.parameters[p].cmd
@@ -242,7 +332,7 @@ class RunCase(HasTraits):
         
         constraints = RunCase.get_constraints_from_avl(avl, case_num)
         rc_constraints = {}
-        for constraint_pattern,constraint_info in constraints.iteritems():
+        for constraint_pattern, constraint_info in constraints.iteritems():
             if constraint_pattern not in runcase.constraint_names:
                 runcase.constraint_names[constraint_pattern] = constraint_pattern
             constraint_name = runcase.constraint_names[constraint_pattern]
@@ -278,8 +368,9 @@ class RunCase(HasTraits):
             unit = unit if unit is not None else ''
             params[name] = Parameter(name=name, pattern=pattern, cmd=group['cmd'], unit=unit, value=float(group['val']))
         #self.parameters[name] = float(group['val'])
-        self.parameters.update(params)
         AVL.goto_state(avl)
+        self.parameters.update(params)
+        #self.parameters = params
         
     def get_run_output(self):
         self.avl.sendline('oper')
@@ -451,3 +542,10 @@ def create_default_avl(*args, **kwargs):
     avl = AVL(cwd='/opt/idearesearch/avl/runs/')
     avl.load_case_from_file('/opt/idearesearch/avl/runs/vanilla.avl')
     return avl
+
+if __name__ == '__main__':
+    tc = TrimCase()
+    print '{'
+    for k, v in tc.parameters.iteritems():
+        print '"' + k + '" : Parameter(name="' + v.name + '",value="' + str(v.value) + '",pattern="' + v.pattern + '",cmd="' + v.cmd + '",unit="' + v.unit + '"),'
+    print '}'

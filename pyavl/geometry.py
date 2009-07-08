@@ -105,7 +105,7 @@ class SectionNACAData(SectionData):
     traits_view = View(['number'])
     @cached_property
     def _get_data_points(self):
-        return NACA4_data(self.number)
+        return get_NACA4_data(self.number)
     
     def write_to_file(self, file):
         file.write('NACA\n%d\n' % self.number)

@@ -42,6 +42,7 @@ class SectionViewer(HasTraits):
     
     @on_trait_change('data')
     def replot(self):
+        # FIXME: handle aspect ration correctness
         print 'in SectionViewer.plot'
         self.plot.title = 'Section : %s' % self.section.type
         self.plot.request_redraw()
