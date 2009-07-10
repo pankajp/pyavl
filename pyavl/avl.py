@@ -27,13 +27,22 @@ logger = logging.getLogger(__name__)
 class EigenMode(HasTraits):
     eigenvalue = Complex()
     # the = theta
-    order = List(String, ['u', 'w', 'q', 'the', 'v', 'p', 'r', 'phi', 'x', 'y', 'z', 'psi'])
+    order = ['u', 'w', 'q', 'the', 'v', 'p', 'r', 'phi', 'x', 'y', 'z', 'psi']
     eigenvector = Array(numpy.complex, shape=(12,))
+    
+    editor = Instance(TableEditor)
+    def _editor_default(self):
+        cols = [ObjectColumn(name='eigenvalue', label='EigenValue')]
+        cols += [ObjectColumn(name='name', label=s) for s in self.order]
+        ret = TableEditor(
+            auto_size=False,
+            editable=False,
+            columns=None)
 
 class EigenMatrix(HasTraits):
     # include the control vector
     matrix = Array(numpy.float, shape=(12, (12, None)))
-    order = List(String, ['u', 'w', 'q', 'the', 'v', 'p', 'r', 'phi', 'x', 'y', 'z', 'psi'])
+    order = ['u', 'w', 'q', 'the', 'v', 'p', 'r', 'phi', 'x', 'y', 'z', 'psi']
 
 class Parameter(HasTraits):
     name = String
@@ -43,7 +52,8 @@ class Parameter(HasTraits):
     cmd = String
     editor = TableEditor(
         auto_size=False,
-        columns=[ ObjectColumn(name='name', editable=False, label='Parameter'),
+        #row_height=20,
+        columns=[ObjectColumn(name='name', editable=False, label='Parameter'),
                      ObjectColumn(name='value', label='Value', editor=TextEditor(evaluate=float, enter_set=True, auto_set=False)),
                      ObjectColumn(name='unit', editable=False, label='Unit')
                     ])
@@ -88,25 +98,10 @@ class TrimCase(HasTraits):
                         kind='livemodal',
                         buttons=['OK']
                        )
-    #@on_trait_change('type,parameters[]')
-    def update_by_code(self):
-        if self._change_code:
-            return
-        self._change_code = True
-        self.update_parameters_from_avl()
-        self._change_code = False
-    
-    #@on_trait_change('type,parameters[]')
-    def update_by_ui(self):
-        if self._change_ui:
-            return
-        self._change_ui = True
-        self.update_parameters_from_avl()
-        self._change_ui = False
     
     #@on_trait_change('type,parameters.value')
     def update_parameters_from_avl(self):
-        print 'in update_parameters_from_avl'
+        #print 'in update_parameters_from_avl'
         avl = self.runcase.avl
         avl.sendline('oper')
         avl.expect(AVL.patterns['/oper'])
@@ -116,7 +111,7 @@ class TrimCase(HasTraits):
         constraint_lines = [line.strip() for line in avl.before.splitlines()]
         i1 = constraint_lines.index('=================================================')
         constraint_lines = constraint_lines[i1:]
-        print constraint_lines
+        #print constraint_lines
         groups = [re.search(RunCase.patterns['parameter'], line) for line in constraint_lines]
         params = {}
         for group in groups:
@@ -128,8 +123,8 @@ class TrimCase(HasTraits):
                 unit = unit if unit is not None else ''
                 params[name] = Parameter(name=name, pattern=pattern, cmd=group['cmd'], unit=unit, value=float(group['val']))
         AVL.goto_state(avl)
-        self.parameters.update(params)
-        self.parameter_view = params.values()
+        self.parameters = params
+        self.parameter_view = sorted(params.values(), key=lambda x:x.name.upper())
         return self
 
 class RunCase(HasTraits):
@@ -147,15 +142,16 @@ class RunCase(HasTraits):
     output = Dict(String, Float, {})
     #not to be used separately apart from modal gui
     #trim_runcase = Instance(TrimCase, TrimCase())
-    set_trim_case_action = Action(name='Set Trim Condition', tooltip='Set the runcase conditions for horizontal(+banked) or looping trim condition', action='set_trimcase')
+    set_trim_case_action = Action(name='Set Trim Condition', action='set_trimcase', \
+                tooltip='Set the runcase conditions for horizontal(+banked) or looping trim condition')
     parameter_view = Property(List(Parameter), depends_on='parameters[]')
-    constraint_view = Property(List(Constraint), depends_on='parameters[]')
+    constraint_view = Property(List(Constraint), depends_on='constraints[]')
     @cached_property
     def _get_parameter_view(self):
-        return self.parameters.values()
+        return sorted(self.parameters.values(), key=lambda x:x.name.upper())
     @cached_property
     def _get_constraint_view(self):
-        return self.constraints.values()
+        return sorted(self.constraints.values(), key=lambda x:x.name.upper())
     
     traits_view = View(Group(Item('number', style='readonly'),
                              Item('name')),
@@ -197,7 +193,7 @@ class RunCase(HasTraits):
     trimcase = Instance(TrimCase, TrimCase())
     
     def set_trimcase(self, info=None):
-        print self
+        #print self
         self.trimcase = TrimCase(runcase=self)
         self.trimcase.update_parameters_from_avl()
         self.trimcase.edit_traits()
@@ -205,7 +201,7 @@ class RunCase(HasTraits):
     
     @on_trait_change('trimcase.parameter_view.value,trimcase.type')
     def on_trimcase_changed(self, object, name, old, new):
-        print object, name, old, new
+        #print object, name, old, new
         print 'trimcase_changed'
         if name == 'value':
             self.update_trim_case(self.trimcase, object)
@@ -215,7 +211,7 @@ class RunCase(HasTraits):
     
     # send changed value of trimcase to avl, parameter is Parameter instance
     def update_trim_case(self, trimcase, parameter):
-        print 'update_trim_case'
+        #print 'update_trim_case'
         self.get_parameters_info_from_avl(self.avl)
         self.avl.sendline('oper')
         self.avl.sendline(trimcase.type_)
@@ -309,7 +305,7 @@ class RunCase(HasTraits):
         return params
     
     @classmethod
-    def get_case_from_avl(cls, avl, case_num):
+    def get_case_from_avl(cls, avl, case_num=1):
         # TODO: parse constraints and parameters from avl
         avl.sendline('oper')
         avl.expect(AVL.patterns['/oper'])

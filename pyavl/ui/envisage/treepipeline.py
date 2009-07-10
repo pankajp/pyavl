@@ -403,15 +403,6 @@ class AVLTreeBrowser(HasTraits):
     ###########################################################################
     def __init__(self, avl=None, **traits):
         """Initializes the object.
-
-        Parameters
-        ----------
-
-        - renwin: `Scene` instance.  Defaults to None.
-
-          This may be passed in addition to the renwins attribute
-          which can be a list of scenes.
-
         """
         super(AVLTreeBrowser, self).__init__(**traits)
         self.ui = None
@@ -514,8 +505,9 @@ class AVLTreeBrowser(HasTraits):
                                             tree_generator=tree_gen)
         else:
             self._root = self._make_default_root()
-
-        self.tree_editor.nodes = tree_gen.get_nodes(self.menu)
+        
+        if hasattr(self, 'tree_editor'):
+            self.tree_editor.nodes = tree_gen.get_nodes(self.menu)
         self.update()
 
     #@on_trait_change('avl.[(case.geometry.[bodies,surfaces.sections]),run_cases]')
