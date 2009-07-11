@@ -39,8 +39,8 @@ class RunOutput(HasTraits):
     variable_values = Array(numpy.float, shape=(None, None))
     eigenmodes = List(EigenMode)
     eigenmatrix = List(EigenMatrix)
-    output_view = Instance(View)
-    eigenmode_view = Instance(View)
+    #output_view = Instance(View)
+    #eigenmode_view = Instance(View)
     
     
     

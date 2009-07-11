@@ -19,6 +19,10 @@ from enthought.traits.ui.api import View, Item, Group, ListEditor, EnumEditor, \
 from enthought.traits.ui.table_column import ObjectColumn
 from enthought.traits.ui.menu import Action, OKButton, CancelButton, CloseAction
 
+import logging
+# Logging.
+logger = logging.getLogger(__name__)
+
 class ParameterConfig(HasTraits):
     parameter = Instance(Parameter)
     expr = Expression()
@@ -149,6 +153,7 @@ class RunConfig(HasTraits):
                 Group(Item('runcase_config', editor=InstanceEditor(), style='custom', show_label=False)),
                 HGroup(Item('output'), Item('eigenmode'), Item('eigenmatrix')),
                        #spring, Item('run_button', show_label=False)),
+                buttons=['OK','Close'],
                 resizable=True)
     
     def get_constraints(self):
@@ -176,20 +181,11 @@ class RunConfig(HasTraits):
             vpn = self.runcase_config.varying_param # varying parameter name
             for n, p in self.runcase_config.trimcase.parameters.iteritems(): # name, parameter
                 if n != vpn:
-                    consts['%s {0}' % p.cmd] = compile(str(p.value))
+                    consts['%s {0}' % p.cmd] = compile(str(p.value), '<string>', 'eval')
             vp = self.runcase_config.trimcase.parameters[vpn]
             vars['%s {0}' % vp.cmd] = self.runcase_config.varying_expr_
         return type, consts, vars
     
-    def get_output(self):
-        out = mode = matrix = None
-        if self.output:
-            out = self.runcase.get_run_output()
-        if self.eigenmode:
-            mode = self.runcase.get_modes()
-        if self.eigenmatrix:
-            matrix = self.runcase.get_system_matrix()
-        return out, mode, matrix
     
     @on_trait_change('run_button')
     def run(self):
@@ -199,6 +195,8 @@ class RunConfig(HasTraits):
         avl = self.runcase.avl
         avl.sendline()
         avl.expect(AVL.patterns['/'])
+        avl.sendline('oper')
+        avl.expect(AVL.patterns['/oper'])
         # first set the constants once and for all
         # constraints
         for c, v in consts_c.iteritems():
@@ -208,13 +206,21 @@ class RunConfig(HasTraits):
         for p, v in consts_p.iteritems():
             avl.sendline(p.format(eval(v)))
         avl.sendline()
+        avl.sendline()
+        avl.expect(AVL.patterns['/'])
         
         outs, modes, matrices = [], [], []
         # now run the case and get output while changing the vars each time
         progress = ProgressDialog(title="progress", message="calculating...", max=self.runcase_config.x.shape[0] - 1, show_time=True, can_cancel=True)
-        progress.open()
+        try:
+            progress.open()
+        except Exception, e:
+            logger.critical(e)
+        print 'x[] = ', self.runcase_config.x
         for i, x in enumerate(self.runcase_config.x):
             # set the variables
+            avl.sendline('oper')
+            avl.expect(AVL.patterns['/oper'])
             # constraints
             print 'running case %d for x=%f' %(i+1,x)
             for c, v in vars_c.iteritems():
@@ -224,18 +230,19 @@ class RunConfig(HasTraits):
             for p, v in vars_p.iteritems():
                 avl.sendline(p.format(eval(v)))
             avl.sendline()
+            
+            # go back to home state
             avl.sendline()
             avl.expect(AVL.patterns['/'])
-            
             # get the output
             outs.append(self.runcase.get_run_output())
             if self.eigenmode:
                 modes.append(self.runcase.get_modes())
             if self.eigenmatrix:
                 matrices.append(self.runcase.get_system_matrix())
-            cont, skip = progress.update(i)
-            if not cont or skip:
-                break
+            #cont, skip = progress.update(i)
+            #if not cont or skip:
+            #    break
         
         out = RunOutput()
         var_names = {}
@@ -260,14 +267,14 @@ if __name__ == '__main__':
     filename = '/opt/idearesearch/avl/runs/allegro.avl'
     avl.load_case_from_file(filename)
     rv = RunConfig(runcase=RunCase.get_case_from_avl(avl.avl))
-    gui = GUI()
-    rv.edit_traits(kind='livemodal')
+    print rv.configure_traits(kind='livemodal')
     print 'rv configured'
+    #gui = GUI()
     #window = ApplicationWindow()
     #window.open()
     #print 'window opened'
     output = rv.run()
-    print 'rv ran'
     print output
-    gui.start_event_loop()
-    print 'main loop finished'
+    print 'rv ran'
+    #gui.start_event_loop()
+    #print 'main loop finished'
