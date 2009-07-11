@@ -6,6 +6,14 @@ Created on Jun 8, 2009
 
 import pexpect
 import os
+import re
+import numpy
+
+#from pyavl.runcase import RunCase, TrimCase
+from pyavl.outpututils import EigenMatrix, EigenMode, RunOutput
+from pyavl.case import Case
+from pyavl.mass import Mass
+
 from enthought.traits.api import HasTraits, List, Float, Dict, String, Int, Tuple, \
     Enum, cached_property, Python, Property, on_trait_change, Complex, Array, Instance, \
     Directory, ReadOnly, DelegatesTo, Any, Trait, Bool
@@ -13,36 +21,12 @@ from enthought.traits.ui.api import View, Item, Group, VGroup, ListEditor, Tuple
     TextEditor, TableEditor, EnumEditor
 from enthought.traits.ui.table_column import ObjectColumn
 from enthought.traits.ui.menu import Action, ToolBar
-import re
-import numpy
-from pyavl.case import Case
-from pyavl.mass import Mass
 #from pyavl.runcase import RunCase
 
 import logging
 # Logging.
 logger = logging.getLogger(__name__)
 
-
-class EigenMode(HasTraits):
-    eigenvalue = Complex()
-    # the = theta
-    order = ['u', 'w', 'q', 'the', 'v', 'p', 'r', 'phi', 'x', 'y', 'z', 'psi']
-    eigenvector = Array(numpy.complex, shape=(12,))
-    
-    editor = Instance(TableEditor)
-    def _editor_default(self):
-        cols = [ObjectColumn(name='eigenvalue', label='EigenValue')]
-        cols += [ObjectColumn(name='name', label=s) for s in self.order]
-        ret = TableEditor(
-            auto_size=False,
-            editable=False,
-            columns=None)
-
-class EigenMatrix(HasTraits):
-    # include the control vector
-    matrix = Array(numpy.float, shape=(12, (12, None)))
-    order = ['u', 'w', 'q', 'the', 'v', 'p', 'r', 'phi', 'x', 'y', 'z', 'psi']
 
 class Parameter(HasTraits):
     name = String
@@ -437,7 +421,8 @@ class RunCase(HasTraits):
         ret = EigenMatrix(order=order, matrix=mat)
         AVL.goto_state(self.avl)
         return ret
-    
+
+
 class AVL(HasTraits):
     '''
     A class representing an avl program instance.
@@ -457,6 +442,7 @@ class AVL(HasTraits):
     case = Instance(Case)
     mass = Instance(Mass)
     cwd = Directory
+    #runoutput = Instance(RunOutput)
     
     traits_view = View(Item('selected_runcase'))
     
@@ -505,9 +491,6 @@ class AVL(HasTraits):
                 pass
         raise Exception('Can\'t reach base state')
     
-    def get_output(self):
-        #FIXME: implement
-        pass
     
     def populate_runcases(self):
         self.avl.sendline('oper')

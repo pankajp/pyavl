@@ -4,11 +4,12 @@ Created on Jul 4, 2009
 @author: pankaj
 '''
 
+from pyavl.utils.traitstools import get_file_from_user
+from pyavl.runutils import RunConfig
+
 from enthought.traits.api import String, Int, List, Instance
 from enthought.traits.ui.api import View, Item, Tabbed, TableEditor, ListEditor, Handler
 from enthought.traits.ui.menu import ToolBar, Action, Menu
-
-from pyavl.utils.traitstools import get_file_from_user
 
 import logging
 # Logging.
@@ -24,14 +25,23 @@ class AVLHandler(Handler):
                     Action(name = "Save Case",
                         action = "save_case",
                         toolip = "Save AVL case to file"),
-                    Action(name = "tp",
-                        action = "do_it",
+                    Action(name = "Run...",
+                        action = "run_config",
                         toolip = "Recalculate the results"),
                     ])
     #def object_runcases_changed(self, uiinfo):
     #    print uiinfo.object, 'runcase name changed'
-    def do_it(self, info):
-        print 'doing...'
+    def run_config(self, info):
+        print 'running...'
+        runcase = info.object.avl.avl.run_cases[0]
+        runcaseconfig = RunConfig(runcase=runcase)
+        out = runcaseconfig.configure_traits(kind='livemodal')
+        if not out:
+            return
+        out = runcase.get_run_output()
+        
+        
+        
     
     def load_case(self, info):
         avl = info.object.avl

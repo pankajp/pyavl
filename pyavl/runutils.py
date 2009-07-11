@@ -6,15 +6,18 @@ Created on Jul 8, 2009
 
 import numpy
 
-from pyavl.avl import AVL, RunCase, Parameter, Constraint, TrimCase
+from pyavl.outpututils import RunOutput
+from pyavl.avl import RunCase, Parameter, Constraint, TrimCase
+from pyavl.avl import AVL
 
+from enthought.pyface.api import ProgressDialog, GUI, ApplicationWindow
 from enthought.traits.api import HasTraits, Instance, Trait, Property, String, \
     cached_property, Enum, Float, Int, Array, List, Any, on_trait_change, Expression, \
-    PrototypedFrom, DelegatesTo
+    PrototypedFrom, DelegatesTo, Button, Bool
 from enthought.traits.ui.api import View, Item, Group, ListEditor, EnumEditor, \
-    InstanceEditor, HGroup, TableEditor, TextEditor, Include, HSplit, VSplit
+    InstanceEditor, HGroup, TableEditor, TextEditor, Include, HSplit, VSplit, ButtonEditor, spring
 from enthought.traits.ui.table_column import ObjectColumn
-from enthought.traits.ui.menu import Action
+from enthought.traits.ui.menu import Action, OKButton, CancelButton, CloseAction
 
 class ParameterConfig(HasTraits):
     parameter = Instance(Parameter)
@@ -43,7 +46,7 @@ class ConstraintConfig(HasTraits):
                      ObjectColumn(name='expr', label='Expression')
                     ])
 
-class CaseConfig(HasTraits):
+class RunOptionsConfig(HasTraits):
     runcase = Instance(RunCase)
     constraint_config = Property(List(ConstraintConfig), depends_on='runcase.constraints[]')
     @cached_property
@@ -58,16 +61,17 @@ class CaseConfig(HasTraits):
     @cached_property
     def _get_x(self):
         return self.x_range_type_(self.x_range_min, self.x_range_max, self.x_num_pts)
+    
     traits_view = View(HGroup(Include('custom_group'),
                                      Group(Item('constraint_config', editor=ConstraintConfig.editor, show_label=False), label='Constraints')),
                         Group(HGroup(Item('x_range_min', label='From'),
-                                    Item('x_range_max', label='To')),
-                                    HGroup(Item('x_num_pts', label='Points'),
+                                    Item('x_range_max', label='To'),
+                                    Item('x_num_pts', label='Points'),
                                     Item('x_range_type', label='Spacing')), label='Variable x'),
                         Item()
                        )
 
-class AdvCaseConfig(CaseConfig):
+class AdvCaseConfig(RunOptionsConfig):
     parameter_config = Property(List(ParameterConfig), depends_on='runcase.parameters[]')
     @cached_property
     def _get_parameter_config(self):
@@ -76,7 +80,7 @@ class AdvCaseConfig(CaseConfig):
     custom_group = Group(Item('parameter_config', editor=ParameterConfig.editor, show_label=False), label='Parameters')
     
 
-class TrimCaseConfig(CaseConfig):
+class TrimCaseConfig(RunOptionsConfig):
     trimcase = Instance(TrimCase, TrimCase())
     #runcase = DelegatesTo('trimcase')
     varying_param = String
@@ -88,7 +92,6 @@ class TrimCaseConfig(CaseConfig):
     
     @on_trait_change('trimcase.parameter_view.value,trimcase.type')
     def on_trimcase_changed(self, object, name, old, new):
-        print object, name, old, new
         print 'trimcase_changed'
         if name == 'value':
             self.trimcase.runcase.update_trim_case(self.trimcase, object)
@@ -115,12 +118,20 @@ class TrimCaseConfig(CaseConfig):
                          Group(Item('varying_param', editor=EnumEditor(name='param_name_list')),
                                Item('varying_expr', label='Expression')))
     
-class RunView(HasTraits):
+class RunConfig(HasTraits):
     runcase = Instance(RunCase)
-    runcase_config = Instance(CaseConfig)
+    runcase_config = Instance(RunOptionsConfig)
     def _runcase_config_default(self):
         return AdvCaseConfig(runcase=self.runcase)
     runtype = Trait('advanced', {'trim flight':'c', 'advanced':'m'})
+    eigenmode = Bool(False)
+    eigenmatrix = Bool(False)
+    def _eigenmatrix_changed(self):
+        if self.eigenmatrix:
+            self.eigenmode = True
+    def _eigenmode_changed(self):
+        if not self.eigenmode:
+            self.eigenmode = False
     
     def _runtype_changed(self, name, old, new):
         if self.runtype_ == 'm':
@@ -133,16 +144,130 @@ class RunView(HasTraits):
                 trimcase.update_parameters_from_avl()
                 self.runcase_config = TrimCaseConfig(runcase=self.runcase, trimcase=trimcase)
     
-    run_action = Action(action='run')
-    
-    #option_view = Property(Any, depends_on='option_type')
+    run_button = Button(label='Run Calculation')
     view = View(Item('runtype'),
                 Group(Item('runcase_config', editor=InstanceEditor(), style='custom', show_label=False)),
+                HGroup(Item('output'), Item('eigenmode'), Item('eigenmatrix')),
+                       #spring, Item('run_button', show_label=False)),
                 resizable=True)
     
+    def get_constraints(self):
+        consts, vars = {}, {}
+        for cc in self.runcase_config.constraint_config:
+            cmd = '%s %s {0}' % (cc.constraint.cmd, self.runcase.constraint_variables[cc.constraint.constraint_name].cmd)
+            if 'x' in cc.expr_.co_names:
+                vars[cmd] = cc.expr_
+            else:
+                consts[cmd] = cc.expr_
+        return consts, vars
+    
+    def get_parameters(self):
+        consts, vars = {}, {}
+        if self.runtype_ == 'm':
+            type = 'm'
+            for pc in self.runcase_config.parameter_config:
+                cmd = '%s {0}' % pc.parameter.cmd
+                if 'x' in pc.expr_.co_names:
+                    vars[cmd] = pc.expr_
+                else:
+                    consts[cmd] = pc.expr_
+        else:
+            type = self.runcase_config.trimcase.type_ # type of parameter, cmd to be set in oper menu to set the parameter
+            vpn = self.runcase_config.varying_param # varying parameter name
+            for n, p in self.runcase_config.trimcase.parameters.iteritems(): # name, parameter
+                if n != vpn:
+                    consts['%s {0}' % p.cmd] = compile(str(p.value))
+            vp = self.runcase_config.trimcase.parameters[vpn]
+            vars['%s {0}' % vp.cmd] = self.runcase_config.varying_expr_
+        return type, consts, vars
+    
+    def get_output(self):
+        out = mode = matrix = None
+        if self.output:
+            out = self.runcase.get_run_output()
+        if self.eigenmode:
+            mode = self.runcase.get_modes()
+        if self.eigenmatrix:
+            matrix = self.runcase.get_system_matrix()
+        return out, mode, matrix
+    
+    @on_trait_change('run_button')
+    def run(self):
+        consts_c, vars_c = self.get_constraints()
+        type_p, consts_p, vars_p = self.get_parameters()
+        # confirm that we are in good state
+        avl = self.runcase.avl
+        avl.sendline()
+        avl.expect(AVL.patterns['/'])
+        # first set the constants once and for all
+        # constraints
+        for c, v in consts_c.iteritems():
+            avl.sendline(c.format(eval(v)))
+        # paramters
+        avl.sendline(type_p)
+        for p, v in consts_p.iteritems():
+            avl.sendline(p.format(eval(v)))
+        avl.sendline()
+        
+        outs, modes, matrices = [], [], []
+        # now run the case and get output while changing the vars each time
+        progress = ProgressDialog(title="progress", message="calculating...", max=self.runcase_config.x.shape[0] - 1, show_time=True, can_cancel=True)
+        progress.open()
+        for i, x in enumerate(self.runcase_config.x):
+            # set the variables
+            # constraints
+            print 'running case %d for x=%f' %(i+1,x)
+            for c, v in vars_c.iteritems():
+                avl.sendline(c.format(eval(v)))
+            # paramters
+            avl.sendline(type_p)
+            for p, v in vars_p.iteritems():
+                avl.sendline(p.format(eval(v)))
+            avl.sendline()
+            avl.sendline()
+            avl.expect(AVL.patterns['/'])
+            
+            # get the output
+            outs.append(self.runcase.get_run_output())
+            if self.eigenmode:
+                modes.append(self.runcase.get_modes())
+            if self.eigenmatrix:
+                matrices.append(self.runcase.get_system_matrix())
+            cont, skip = progress.update(i)
+            if not cont or skip:
+                break
+        
+        out = RunOutput()
+        var_names = {}
+        num_vars = 0
+        if len(outs) > 0:
+            # get output variables
+            for i, n in enumerate(outs[0].keys()):
+                var_names[n] = i
+            num_vars = i+1
+            variable_names = sorted(var_names.keys(), key=lambda x:var_names[x])
+            vars = numpy.empty((len(outs),num_vars))
+            for i,out in enumerate(outs):
+                for n,v in out.iteritems():
+                    vars[i,var_names[n]] = v
+        
+        output = RunOutput(variable_names=variable_names, variable_values=vars, eigenmodes=modes, eigenmatrices=matrices)
+        
+        return output
+
 if __name__ == '__main__':
     avl = AVL(cwd='/opt/idearesearch/avl/runs/')
     filename = '/opt/idearesearch/avl/runs/allegro.avl'
     avl.load_case_from_file(filename)
-    rv = RunView(runcase=RunCase.get_case_from_avl(avl.avl))
-    rv.configure_traits()
+    rv = RunConfig(runcase=RunCase.get_case_from_avl(avl.avl))
+    gui = GUI()
+    rv.edit_traits(kind='livemodal')
+    print 'rv configured'
+    #window = ApplicationWindow()
+    #window.open()
+    #print 'window opened'
+    output = rv.run()
+    print 'rv ran'
+    print output
+    gui.start_event_loop()
+    print 'main loop finished'
