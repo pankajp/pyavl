@@ -16,7 +16,7 @@ from enthought.pyface.workbench.view import View
 logger = logging.getLogger(__name__)
 
 
-class AVLTreeUIView(View):
+class AVLTraitsUIView(View):
     """ A view whose content is provided by a traits UI. """
 
     #### 'TraitsUIView' interface #############################################

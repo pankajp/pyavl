@@ -37,11 +37,28 @@ class AVLPlugin(Plugin):
     def _service_offers_default(self):
         """ Trait initializer. """
         avl_service_offer = ServiceOffer(
-            protocol = 'pyavl.avl.AVL',
-            factory  = 'pyavl.avl.create_default_avl'
+            protocol='pyavl.avl.AVL',
+            factory='pyavl.avl.create_default_avl'
         )
+        
+        def create_default_runoutput(*args, **kwargs):
+            avl = AVL(cwd='/opt/idearesearch/avl/runs/')
+            avl.load_case_from_file('/opt/idearesearch/avl/runs/vanilla.avl')
+            return avl
+        
+        avl_runoutput_service_offer = ServiceOffer(
+            protocol='pyavl.outpututils.RunOutput',
+            factory=self.create_default_runoutput,
+            )
 
-        return [avl_service_offer]
+        return [avl_service_offer, avl_runoutput_service_offer]
+    
+    def create_default_runoutput(self, *args, **kwargs):
+        from pyavl.runutils import RunCase, RunConfig
+        avl = self.application.get_service('pyavl.avl.AVL')
+        rc = RunConfig(runcase=RunCase.get_case_from_avl(avl.avl))
+        runoutput = rc.run()
+        return runoutput
     
 #### EOF ######################################################################
 

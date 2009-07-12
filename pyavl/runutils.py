@@ -87,8 +87,8 @@ class AdvCaseConfig(RunOptionsConfig):
 class TrimCaseConfig(RunOptionsConfig):
     trimcase = Instance(TrimCase, TrimCase())
     #runcase = DelegatesTo('trimcase')
-    varying_param = String
-    varying_expr = Expression
+    varying_param = String('velocity')
+    varying_expr = Expression('100')
     param_name_list = Property(List(String), depends_on='trimcase.parameters')
     @cached_property
     def _get_param_name_list(self):
@@ -128,14 +128,7 @@ class RunConfig(HasTraits):
     def _runcase_config_default(self):
         return AdvCaseConfig(runcase=self.runcase)
     runtype = Trait('advanced', {'trim flight':'c', 'advanced':'m'})
-    eigenmode = Bool(False)
-    eigenmatrix = Bool(False)
-    def _eigenmatrix_changed(self):
-        if self.eigenmatrix:
-            self.eigenmode = True
-    def _eigenmode_changed(self):
-        if not self.eigenmode:
-            self.eigenmode = False
+    calc_eigenmodes = Bool(True)
     
     def _runtype_changed(self, name, old, new):
         if self.runtype_ == 'm':
@@ -151,7 +144,7 @@ class RunConfig(HasTraits):
     run_button = Button(label='Run Calculation')
     view = View(Item('runtype'),
                 Group(Item('runcase_config', editor=InstanceEditor(), style='custom', show_label=False)),
-                HGroup(Item('eigenmode'), Item('eigenmatrix')),
+                HGroup(Item('calc_eigenmodes')),
                        #spring, Item('run_button', show_label=False)),
                 buttons=['OK','Close'],
                 resizable=True)
@@ -215,14 +208,14 @@ class RunConfig(HasTraits):
         try:
             progress.open()
         except Exception, e:
-            logger.critical(e)
-        print 'x[] = ', self.runcase_config.x
+            logger.warning(e)
+        #print 'x[] = ', self.runcase_config.x
         for i, x in enumerate(self.runcase_config.x):
             # set the variables
             avl.sendline('oper')
             avl.expect(AVL.patterns['/oper'])
             # constraints
-            print 'running case %d for x=%f' %(i+1,x)
+            logger.info('running case %d for x=%f' %(i+1,x))
             for c, v in vars_c.iteritems():
                 avl.sendline(c.format(eval(v)))
             # paramters
@@ -238,18 +231,21 @@ class RunConfig(HasTraits):
             try:
                 outs.append(self.runcase.get_run_output())
                 
-                if self.eigenmode:
+                if self.calc_eigenmodes:
                     modes.append(self.runcase.get_modes())
-                if self.eigenmatrix:
                     matrices.append(self.runcase.get_system_matrix())
                 
             except AttributeError, e:
-                print logger.critical(e)
-            #cont, skip = progress.update(i)
-            #if not cont or skip:
-            #    break
+                logger.warning(e)
+            try:
+                #cont, skip = progress.update(i)
+                #if not cont or skip:
+                #    break
+                pass
+            except Exception, e:
+                logger.warning(e)
+                
         
-        out = RunOutput()
         var_names = {}
         num_vars = 0
         if len(outs) > 0:
@@ -263,7 +259,10 @@ class RunConfig(HasTraits):
                 for n,v in out.iteritems():
                     vars[i,var_names[n]] = v
         
-        output = RunOutput(variable_names=variable_names, variable_values=vars, eigenmodes=modes, eigenmatrices=matrices)
+        #print 'variable runs', len(vars)
+        #print 'modes', len(modes)
+        #print 'matrices', len(matrices)
+        output = RunOutput(variable_names=variable_names, variable_values=vars, eigenmodes=modes, eigenmatrix=matrices)
         
         return output
 

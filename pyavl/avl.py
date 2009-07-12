@@ -387,9 +387,9 @@ class RunCase(HasTraits):
             eigenvalue = float(mode_eval.group('real')) + 1j * float(mode_eval.group('imag'))
             mode = EigenMode(eigenvalue=eigenvalue)
             i = 0
-            for match in re.finditer(RunCase.patterns['modeveccomp'], ' '.join(text[i + 1:i + 4])):
+            for match in re.finditer(RunCase.patterns['modeveccomp'], ' '.join(text[mode_eval.end():])):
                 i += 1
-                mode.eigenvector[mode.order.index[match.groups('name')]] = float(mode_eval.groups('real')) + 1j * float(mode_eval.groups('imag'))
+                mode.eigenvector[mode.order.index(match.group('name'))] = float(mode_eval.group('real')) + 1j * float(mode_eval.group('imag'))
                 if i > 11:
                     break
             modes.append(mode)

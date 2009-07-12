@@ -7,6 +7,7 @@ import logging
 # pyavl imports
 from pyavl.ui.envisage.avl_plugin import AVLPlugin
 from pyavl.ui.envisage.avl_ui_plugin import AVLUIPlugin
+from pyavl.ui.envisage.output_plugin import AVLOutputPlugin
 from pyavl.ui.envisage.application import PyAVLApplication
 
 
@@ -47,7 +48,9 @@ def main():
             TextEditorPlugin(),
             ChacoPlugin(),
             
-            DeveloperUIPlugin()
+            DeveloperUIPlugin(),
+            
+            AVLOutputPlugin(),
         ]
     )
 

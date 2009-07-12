@@ -28,6 +28,8 @@ class AVLPerspective(Perspective):
 
     contents = [
         PerspectiveItem(id='pyavl.tree'),
+        PerspectiveItem(id='pyavl.geometry'),
+        PerspectiveItem(id='pyavl.section'),
         #PerspectiveItem(id='lorenz.plot2d')
     ]
 
@@ -80,9 +82,9 @@ class AVLUIPlugin(Plugin):
     
     def _tree_view_default(self):
         from pyavl.ui.envisage.treepipeline import AVLTreeBrowser
-        from pyavl.ui.envisage.avl_tree_ui_view import AVLTreeUIView
+        from pyavl.ui.envisage.avl_traits_ui_view import AVLTraitsUIView
         obj = AVLTreeBrowser(avl=self.avl)
-        tree_view = AVLTreeUIView(
+        tree_view = AVLTraitsUIView(
             id='pyavl.tree',
             name='Tree View',
             view=obj.view,

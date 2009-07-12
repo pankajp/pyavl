@@ -29,7 +29,7 @@ class EigenMode(HasTraits):
 class EigenMatrix(HasTraits):
     # include the control vector
     matrix = Array(numpy.float, shape=(12, (12, None)))
-    order = ['u', 'w', 'q', 'the', 'v', 'p', 'r', 'phi', 'x', 'y', 'z', 'psi']
+    order = List(String, ['u', 'w', 'q', 'the', 'v', 'p', 'r', 'phi', 'x', 'y', 'z', 'psi'])
 
 class RunOutput(HasTraits):
     '''class to store the output if a sequence of runcases'''
@@ -45,5 +45,4 @@ class RunOutput(HasTraits):
         file.write('"%s"\n' %('"\t"'.join(self.variable_names)))
         for row in self.variable_values:
             file.write('%s\n' %('\t'.join([str(var) for var in row])))
-    
     

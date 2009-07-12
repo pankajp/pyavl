@@ -33,7 +33,7 @@ class AVLHandler(Handler):
     #    print uiinfo.object, 'runcase name changed'
     def run_config(self, info):
         print 'running...'
-        runcase = info.object.avl.avl.run_cases[0]
+        runcase = info.object.avl.run_cases[0]
         runcaseconfig = RunConfig(runcase=runcase)
         out = runcaseconfig.configure_traits(kind='livemodal')
         if not out:
