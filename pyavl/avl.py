@@ -123,7 +123,7 @@ class RunCase(HasTraits):
                 }
     number = Int
     name = String
-    output = Dict(String, Float, {})
+    runoutput = Instance(RunOutput, RunOutput())# Dict(String, Float, {})
     #not to be used separately apart from modal gui
     #trim_runcase = Instance(TrimCase, TrimCase())
     set_trim_case_action = Action(name='Set Trim Condition', action='set_trimcase', \
@@ -365,7 +365,7 @@ class RunCase(HasTraits):
         AVL.goto_state(self.avl)
         for match in re.finditer(RunCase.patterns['var'], text):
             ret[match.group('name')] = float(match.group('value'))
-        self.output = ret
+        #self.output = ret
         AVL.goto_state(self.avl)
         return ret
     
@@ -520,7 +520,12 @@ class AVL(HasTraits):
 def create_default_avl(*args, **kwargs):
     avl = AVL(cwd='/opt/idearesearch/avl/runs/')
     avl.load_case_from_file('/opt/idearesearch/avl/runs/vanilla.avl')
+    from pyavl.runutils import RunConfig
+    rc = RunConfig(runcase=RunCase.get_case_from_avl(avl.avl))
+    runoutput = rc.run(progressbar=False)
+    avl.run_cases[0].runoutput = runoutput
     return avl
+
 
 if __name__ == '__main__':
     tc = TrimCase()

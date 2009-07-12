@@ -511,6 +511,10 @@ class AVLTreeBrowser(HasTraits):
         self.update()
 
     #@on_trait_change('avl.[(case.geometry.[bodies,surfaces.sections]),run_cases]')
+    @on_trait_change('avl.case.geometry.bodies_items,avl.case.geometry.surfaces.sections_items')
+    def refresh(self):
+        self.update()
+    
     def _root_object_changed(self, root_obj):
         """Trait handler called when the root object is assigned to."""
         logger.info('in _root_object_changed')

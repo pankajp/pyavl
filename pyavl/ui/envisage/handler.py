@@ -38,10 +38,12 @@ class AVLHandler(Handler):
         out = runcaseconfig.configure_traits(kind='livemodal')
         if not out:
             return
-        out = runcase.get_run_output()
-        
-        
-        
+        output = runcaseconfig.run()
+        runcase.runoutput.variable_names = output.variable_names
+        runcase.runoutput.variable_values = output.variable_values
+        runcase.runoutput.eigenmodes = output.eigenmodes
+        runcase.runoutput.eigenmatrix = output.eigenmatrix
+
     
     def load_case(self, info):
         avl = info.object.avl

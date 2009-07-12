@@ -144,9 +144,9 @@ class RunConfig(HasTraits):
     run_button = Button(label='Run Calculation')
     view = View(Item('runtype'),
                 Group(Item('runcase_config', editor=InstanceEditor(), style='custom', show_label=False)),
-                HGroup(Item('calc_eigenmodes')),
+                #HGroup(Item('calc_eigenmodes')),
                        #spring, Item('run_button', show_label=False)),
-                buttons=['OK','Close'],
+                buttons=['OK', 'Cancel'],
                 resizable=True)
     
     def get_constraints(self):
@@ -181,7 +181,7 @@ class RunConfig(HasTraits):
     
     
     @on_trait_change('run_button')
-    def run(self):
+    def run(self, progressbar=True):
         consts_c, vars_c = self.get_constraints()
         type_p, consts_p, vars_p = self.get_parameters()
         # confirm that we are in good state
@@ -204,18 +204,19 @@ class RunConfig(HasTraits):
         
         outs, modes, matrices = [], [], []
         # now run the case and get output while changing the vars each time
-        progress = ProgressDialog(title="progress", message="calculating...", max=self.runcase_config.x.shape[0] - 1, show_time=True, can_cancel=True)
-        try:
-            progress.open()
-        except Exception, e:
-            logger.warning(e)
+        if progressbar:
+            progress = ProgressDialog(title="progress", message="calculating...", max=self.runcase_config.x.shape[0] - 1, show_time=True, can_cancel=True)
+            try:
+                progress.open()
+            except Exception, e:
+                logger.warning(e)
         #print 'x[] = ', self.runcase_config.x
         for i, x in enumerate(self.runcase_config.x):
             # set the variables
             avl.sendline('oper')
             avl.expect(AVL.patterns['/oper'])
             # constraints
-            logger.info('running case %d for x=%f' %(i+1,x))
+            logger.info('running case %d for x=%f' % (i + 1, x))
             for c, v in vars_c.iteritems():
                 avl.sendline(c.format(eval(v)))
             # paramters
@@ -237,13 +238,14 @@ class RunConfig(HasTraits):
                 
             except AttributeError, e:
                 logger.warning(e)
-            try:
-                #cont, skip = progress.update(i)
-                #if not cont or skip:
-                #    break
-                pass
-            except Exception, e:
-                logger.warning(e)
+            if progressbar:
+                try:
+                    cont, skip = progress.update(i)
+                    if not cont or skip:
+                        break
+                    pass
+                except Exception, e:
+                    logger.warning(e)
                 
         
         var_names = {}
@@ -252,12 +254,12 @@ class RunConfig(HasTraits):
             # get output variables
             for i, n in enumerate(outs[0].keys()):
                 var_names[n] = i
-            num_vars = i+1
+            num_vars = i + 1
             variable_names = sorted(var_names.keys(), key=lambda x:var_names[x])
-            vars = numpy.empty((len(outs),num_vars))
-            for i,out in enumerate(outs):
-                for n,v in out.iteritems():
-                    vars[i,var_names[n]] = v
+            vars = numpy.empty((len(outs), num_vars))
+            for i, out in enumerate(outs):
+                for n, v in out.iteritems():
+                    vars[i, var_names[n]] = v
         
         #print 'variable runs', len(vars)
         #print 'modes', len(modes)

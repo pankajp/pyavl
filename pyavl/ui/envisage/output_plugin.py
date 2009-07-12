@@ -74,7 +74,7 @@ class AVLOutputPlugin(Plugin):
     runoutput = Any()
     
     def _runoutput_default(self):
-        ret = self.application.get_service('pyavl.outpututils.RunOutput')
+        ret = self.application.get_service('pyavl.avl.AVL').run_cases[0].runoutput
         logger.info('in _runoutput_default : '+str(ret))
         return ret
     

@@ -5,9 +5,10 @@ Created on Jun 9, 2009
 '''
 import os
 import numpy
-from enthought.traits.api import HasTraits, List, Str, Float, Range, Int, Dict, \
+from enthought.traits.api import HasTraits, List, Str, Float, Range, Int, Dict, Button, \
         File, Trait, Instance, Enum, Array, cached_property, Property, String, Directory
-from enthought.traits.ui.api import View, Item, Group, ListEditor, ArrayEditor, ListStrEditor
+from enthought.traits.ui.api import View, Item, Group, ListEditor, ArrayEditor, ListStrEditor, \
+    HGroup
 from enthought.traits.ui.value_tree import TraitsNode
 from pyavl.utils.naca4_plotter import get_NACA4_data
 
@@ -118,7 +119,7 @@ class Section(HasTraits):
     Class representing a section of a surface (flat plate)
     '''
     leading_edge = Array(numpy.float, (3,))
-    chord = Float
+    chord = Float(1)
     angle = Float
     svortices = List(value=[0, 1.0], minlen=2, maxlen=2)
     claf = Float(1.0)
@@ -126,7 +127,7 @@ class Section(HasTraits):
     controls = List(Control, [])
     design_params = Dict(String, Instance(DesignParameter), {})
     type = Enum('flat plate', 'airfoil data', 'airfoil data file', 'NACA')
-    data = Instance(SectionData)
+    data = Instance(SectionData, SectionData())
     cwd = Directory
     
     def _type_changed(self):
@@ -258,9 +259,9 @@ class Body(HasTraits):
     Class representing a body modeled by source-sink doublet
     '''
     name = Str('Unnamed Body')
-    lsources = List
+    lsources = List(value=[8, 1], minlen=2, maxlen=2)
     filename = File
-    yduplicate = Float
+    yduplicate = Float(numpy.nan)
     scale = Array(numpy.float, (3,), numpy.ones((3,)))
     translate = Array(numpy.float, (3,))
     num_pts = Int(10)
@@ -330,7 +331,7 @@ class Surface(HasTraits):
     '''
     
     name = Str('Unnamed surface')
-    cvortices = List(minlen=2, maxlen=2)
+    cvortices = List(value=[8, 1], minlen=2, maxlen=2)
     svortices = List(value=[0, 1.0], minlen=2, maxlen=2)
     index = Int
     yduplicate = Float(numpy.nan)
@@ -412,8 +413,20 @@ class Geometry(TraitsNode):
     bodies = List(Body, [])
     controls = Property(List(String), depends_on='surfaces')
     cwd = Directory
-    traits_view = View(Item('controls', editor=ListStrEditor(editable=False), style='readonly')
+    add_surface = Button()
+    add_body = Button()
+    traits_view = View(HGroup(Item('add_surface'),Item('add_body'), show_labels=False),
+                       Item('controls', editor=ListStrEditor(editable=False), style='readonly')
                        )
+    def _add_surface_fired(self):
+        surface = Surface(sections=[Section(), Section(leading_edge=numpy.array([0,1,0]), yduplicate=0)])
+        self.surfaces.append(surface)
+    
+    def _add_body_fired(self):
+        body = Body()
+        self.bodies.append(body)
+    
+    
     @cached_property
     def _get_controls(self):
         ret = set([])
