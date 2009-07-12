@@ -37,11 +37,13 @@ class RunOutput(HasTraits):
     variable_names = List(String)
     # 2d array
     variable_values = Array(numpy.float, shape=(None, None))
-    eigenmodes = List(EigenMode)
+    eigenmodes = List(List(EigenMode))
     eigenmatrix = List(EigenMatrix)
     #output_view = Instance(View)
     #eigenmode_view = Instance(View)
-    
-    
+    def save_variables(self, file):
+        file.write('"%s"\n' %('"\t"'.join(self.variable_names)))
+        for row in self.variable_values:
+            file.write('%s\n' %('\t'.join([str(var) for var in row])))
     
     

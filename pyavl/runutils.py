@@ -151,7 +151,7 @@ class RunConfig(HasTraits):
     run_button = Button(label='Run Calculation')
     view = View(Item('runtype'),
                 Group(Item('runcase_config', editor=InstanceEditor(), style='custom', show_label=False)),
-                HGroup(Item('output'), Item('eigenmode'), Item('eigenmatrix')),
+                HGroup(Item('eigenmode'), Item('eigenmatrix')),
                        #spring, Item('run_button', show_label=False)),
                 buttons=['OK','Close'],
                 resizable=True)
@@ -235,11 +235,16 @@ class RunConfig(HasTraits):
             avl.sendline()
             avl.expect(AVL.patterns['/'])
             # get the output
-            outs.append(self.runcase.get_run_output())
-            if self.eigenmode:
-                modes.append(self.runcase.get_modes())
-            if self.eigenmatrix:
-                matrices.append(self.runcase.get_system_matrix())
+            try:
+                outs.append(self.runcase.get_run_output())
+                
+                if self.eigenmode:
+                    modes.append(self.runcase.get_modes())
+                if self.eigenmatrix:
+                    matrices.append(self.runcase.get_system_matrix())
+                
+            except AttributeError, e:
+                print logger.critical(e)
             #cont, skip = progress.update(i)
             #if not cont or skip:
             #    break

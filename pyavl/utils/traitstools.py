@@ -20,7 +20,7 @@ class FileName(HasTraits):
     filename = File()
     traits_view = View(Item('filename'), buttons=['OK', 'Cancel'])
 
-def get_file_from_user(cwd=None, filter=None, entries=0):
+def get_file_from_user(cwd='', filter=['All (*)|*'], entries=0):
     filename = FileName(filename='')
     f = filename.configure_traits(view=View(Item('filename', editor=FileEditor(entries=entries, filter=filter)),
                                 buttons=['OK', 'Cancel'], width=500, height=200), kind='modal')
