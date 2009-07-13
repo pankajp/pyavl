@@ -415,8 +415,9 @@ class Geometry(TraitsNode):
     cwd = Directory
     add_surface = Button()
     add_body = Button()
-    traits_view = View(HGroup(Item('add_surface'),Item('add_body'), show_labels=False),
-                       Item('controls', editor=ListStrEditor(editable=False), style='readonly')
+    refresh_geometry_view = Button()
+    traits_view = View(HGroup(Item('add_surface'),Item('add_body'),Item('refresh_geometry_view'), show_labels=False),
+                       Item('controls', editor=ListStrEditor(editable=False,operations=[]), style='readonly')
                        )
     def _add_surface_fired(self):
         surface = Surface(sections=[Section(), Section(leading_edge=numpy.array([0,1,0]), yduplicate=0)])

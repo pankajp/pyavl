@@ -143,8 +143,8 @@ class GeometryViewer(HasTraits):
     transverse = Range(0, 30, 11)
     scene = Instance(MlabSceneModel, ())
     geometry = Instance(Geometry)
-    bodies = Property(List(Instance(BodyViewer)), depends_on='geometry.bodies[]')
-    surfaces = Property(List(Instance(SurfaceViewer)), depends_on='geometry.surfaces[]')
+    bodies = Property(List(Instance(BodyViewer)), depends_on='geometry.refresh_geometry_view,geometry.bodies[]')
+    surfaces = Property(List(Instance(SurfaceViewer)), depends_on='geometry.refresh_geometry_view,geometry.surfaces[]')
     @cached_property
     def _get_surfaces(self):
         ret = []
@@ -201,7 +201,7 @@ class GeometryViewer(HasTraits):
         #self.plot = self.scene.mlab.plot3d(x, y, z, t, colormap='Spectral')
         self.update_plot()
 
-    @on_trait_change('geometry')
+    @on_trait_change('geometry,geometry.refresh_geometry_view')
     def update_plot(self):
         self.plots = []
         #self.plot.mlab_source.set(x=x, y=y, z=z, scalars=t)
