@@ -6,7 +6,8 @@ Created on Jun 9, 2009
 import os
 import numpy
 from enthought.traits.api import HasTraits, List, Str, Float, Range, Int, Dict, Button, \
-        File, Trait, Instance, Enum, Array, cached_property, Property, String, Directory
+        File, Trait, Instance, Enum, Array, cached_property, Property, String, Directory, \
+        on_trait_change
 from enthought.traits.ui.api import View, Item, Group, ListEditor, ArrayEditor, ListStrEditor, \
     HGroup
 from enthought.traits.ui.value_tree import TraitsNode
@@ -55,6 +56,7 @@ class DesignParameter(HasTraits):
         file.write('DESIGN\n%s    %f\n' % (self.name, self.weight))
 
 class SectionData(HasTraits):
+    type = 'flat plate'
     def write_to_file(self, file):
         pass
     
@@ -66,6 +68,7 @@ class SectionData(HasTraits):
                       [1.0, 0.0]])
 
 class SectionAFILEData(SectionData):
+    type = 'airfoil data file'
     filename = File
     x_range = List(Float, [0.0, 1.0], 2, 2)
     cwd = Directory('')
@@ -87,6 +90,7 @@ class SectionAFILEData(SectionData):
         return self.data_points
 
 class SectionAIRFOILData(SectionData):
+    type = 'airfoil data'
     data_points = Array(numpy.float, ((2, None), 2), numpy.array([[0., 0.], [1., 0.]]))
     x_range = List(Float, [0.0, 1.0], 2, 2)
     traits_view = View(['data_points','x_range'])
@@ -101,6 +105,7 @@ class SectionAIRFOILData(SectionData):
         return self.data_points
     
 class SectionNACAData(SectionData):
+    type = 'NACA'
     number = Int
     data_points = Property(Array(numpy.float, ((2, None), 2), numpy.array([[0., 0.], [1., 0.]])), depends_on='number')
     traits_view = View(['number'])
@@ -129,6 +134,7 @@ class Section(HasTraits):
     type = Enum('flat plate', 'airfoil data', 'airfoil data file', 'NACA')
     data = Instance(SectionData, SectionData())
     cwd = Directory
+    delete_section = Button()
     
     def _type_changed(self):
         if self.type == 'flat plate':
@@ -149,6 +155,7 @@ class Section(HasTraits):
                        Item('design_params'),
                        Item('type'),
                        Item('data', style='custom'),
+                       Item('delete_section', show_label=False),
                        )
     
     
@@ -183,8 +190,9 @@ class Section(HasTraits):
             svortices = [0, 1.0]
         lineno += 2
         section = Section(leading_edge=leading_edge, chord=chord, angle=angle, svortices=svortices)
-        
-        if lines[lineno].startswith('NACA'):
+        if lineno >= len(lines):
+            section.data = SectionData()
+        elif lines[lineno].startswith('NACA'):
             number = int(lines[lineno + 1])
             section.type = 'NACA'
             section.data = SectionNACAData(number=number)
@@ -265,6 +273,7 @@ class Body(HasTraits):
     scale = Array(numpy.float, (3,), numpy.ones((3,)))
     translate = Array(numpy.float, (3,))
     num_pts = Int(10)
+    delete_body = Button()
     # pt, xy
     data = Property(Array(numpy.float), depends_on='filename')
     cwd = Directory
@@ -280,6 +289,7 @@ class Body(HasTraits):
                        Item('scale', editor=ArrayEditor()),
                        Item('translate', editor=ArrayEditor()),
                        Item('num_pts'),
+                       Item('delete_body', show_label=False),
                        )
     
     def write_to_file(self, file):
@@ -340,6 +350,8 @@ class Surface(HasTraits):
     angle = Float
     sections = List(Section, [])
     cwd = Directory
+    add_section = Button()
+    delete_surface = Button()
     
     traits_view = View(Item('name'),
                        Item('cvortices'),
@@ -349,7 +361,13 @@ class Surface(HasTraits):
                        Item('scale', editor=ArrayEditor()),
                        Item('translate', editor=ArrayEditor()),
                        Item('angle'),
+                       HGroup(Item('add_section'),Item('delete_surface'), show_labels=False),
                        )
+    
+    @on_trait_change('sections.delete_section')
+    def delete_section(self, object, name, new):
+        if name == 'delete_section':
+            self.sections.remove(object)
     
     def write_to_file(self, file):
         file.write('SURFACE\n')
@@ -415,18 +433,35 @@ class Geometry(TraitsNode):
     cwd = Directory
     add_surface = Button()
     add_body = Button()
+    add_parafoil = Button()
     refresh_geometry_view = Button()
-    traits_view = View(HGroup(Item('add_surface'),Item('add_body'),Item('refresh_geometry_view'), show_labels=False),
+    traits_view = View(HGroup(Item('add_surface'),Item('add_parafoil'),Item('add_body'),Item('refresh_geometry_view'), show_labels=False),
                        Item('controls', editor=ListStrEditor(editable=False,operations=[]), style='readonly')
                        )
     def _add_surface_fired(self):
         surface = Surface(sections=[Section(), Section(leading_edge=numpy.array([0,1,0]), yduplicate=0)])
         self.surfaces.append(surface)
+        self.refresh_geometry_view = True
     
     def _add_body_fired(self):
         body = Body()
         self.bodies.append(body)
+        self.refresh_geometry_view = True
     
+    def _add_parafoil_fired(self):
+        from pyavl.utils.wizards.parafoil import ParafoilWizard
+        pw = ParafoilWizard()
+        if pw.edit_traits(kind='livemodal'):
+            self.surfaces.append(pw.get_surface())
+        self.refresh_geometry_view = True
+    
+    @on_trait_change('bodies.delete_body,surfaces.delete_surface, surfaces.sections.delete_section')
+    def delete_part(self, object, name, new):
+        if name == 'delete_surface':
+            self.surfaces.remove(object)
+        elif name == 'delete_body':
+            self.bodies.remove(object)
+        self.refresh_geometry_view = True
     
     @cached_property
     def _get_controls(self):

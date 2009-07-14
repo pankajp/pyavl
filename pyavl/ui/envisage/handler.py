@@ -52,6 +52,7 @@ class AVLHandler(Handler):
             avl.load_case_from_file(filename)
             logger.info('loading case from file : %s' %str(filename))
     
+    # NOTE: it also reloads the case into avl
     def save_case(self, info):
         case = info.object.avl.case
         filename = get_file_from_user(cwd=case.cwd, filter=['AVL case files (*.avl)|*.avl'])
@@ -59,6 +60,9 @@ class AVLHandler(Handler):
             f = open(filename, 'w')
             case.write_input_file(f)
         logger.info('saving case to file : %s' %str(filename))
+        info.object.avl.load_case_from_file(filename)
+        logger.info('reloading case into avl : %s' %str(filename))
+        
     
     def object_avl_case_changed(self, info):
         logger.info('handler : object_avl_case_changed')

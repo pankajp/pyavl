@@ -163,14 +163,14 @@ class SimpleTreeGenerator(TreeGenerator):
         nodes = [ObjectTreeNode(node_for=[TreeBranchNode],
                                 view=View(Group(Item('object', style='custom'),
                                                 show_labels=False)),
-                                auto_open=False,
+                                auto_open=True,
                                 children='children', label='name', menu=menu,
                                 rename=False, delete=False, copy=False,
                                 insert=False),
                  ObjectTreeNode(node_for=[TreeLeafNode],
                                 view=View(Group(Item('object', style='custom'),
                                                 show_labels=False)),
-                                auto_open=False,
+                                auto_open=True,
                                 label='name', menu=menu, rename=False,
                                 delete=False, copy=False, insert=False),
                  ObjectTreeNode(node_for=[TreeCollectionNode],
@@ -460,6 +460,8 @@ class AVLTreeBrowser(HasTraits):
                 self.ui = self.view.ui(self, parent=parent)
     
     #@on_trait_change('avl?.[(case?.geometry?.[bodies?,surfaces?.sections?])?,run_cases?]')
+    #@on_trait_change('avl.case.geometry.refresh_geometry_view')
+    # this doesn't work, self.ui is None
     def update(self):
         """Update the tree view."""
         # This is a hack.
@@ -485,7 +487,7 @@ class AVLTreeBrowser(HasTraits):
         return node
 
     #@on_trait_change('avl?,avl?.case?,avl?.case?.geometry?,avl?.run_cases?[],avl?.case?.geometry?.surfaces?[],avl?.case?.geometry?.surfaces?.sections?[],avl?.case?.geometry?.bodies?[]')
-    @on_trait_change('avl?,avl.case?')
+    @on_trait_change('avl?,avl.case?,avl.case.geometry.refresh_geometry_view')
     def recreate_tree(self):
         self._tree_generator_changed(self.tree_generator)
     

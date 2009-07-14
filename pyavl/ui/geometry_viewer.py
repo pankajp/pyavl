@@ -252,10 +252,13 @@ class GeometryViewer(HasTraits):
                 )
 
 if __name__ == '__main__':
+    import sys
     from pyavl.case import Case
-    file = open('/opt/idearesearch/avl/runs/bd.avl')
+    if len(sys.argv)>1:
+        file = open(sys.argv[1])
+    else:
+        file = open('/opt/idearesearch/pyavl/testcase/avl_case/testflatplate.avl')
     case = Case.case_from_input_file(file)
     g = GeometryViewer(geometry=case.geometry)
     g.configure_traits()
     #print g.surfaces[2].sectiondata
-    
