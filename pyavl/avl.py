@@ -16,7 +16,7 @@ from pyavl.mass import Mass
 
 from enthought.traits.api import HasTraits, List, Float, Dict, String, Int, Tuple, \
     Enum, cached_property, Python, Property, on_trait_change, Complex, Array, Instance, \
-    Directory, ReadOnly, DelegatesTo, Any, Trait, Bool
+    Directory, ReadOnly, DelegatesTo, Any, Trait, Bool, File
 from enthought.traits.ui.api import View, Item, Group, VGroup, ListEditor, TupleEditor, \
     TextEditor, TableEditor, EnumEditor
 from enthought.traits.ui.table_column import ObjectColumn
@@ -387,7 +387,7 @@ class RunCase(HasTraits):
             eigenvalue = float(mode_eval.group('real')) + 1j * float(mode_eval.group('imag'))
             mode = EigenMode(eigenvalue=eigenvalue)
             i = 0
-            for match in re.finditer(RunCase.patterns['modeveccomp'], ' '.join(text[mode_eval.end():])):
+            for match in re.finditer(RunCase.patterns['modeveccomp'], text[mode_eval.end():]):
                 i += 1
                 mode.eigenvector[mode.order.index(match.group('name'))] = float(mode_eval.group('real')) + 1j * float(mode_eval.group('imag'))
                 if i > 11:
@@ -440,6 +440,7 @@ class AVL(HasTraits):
     state = String('/')
     selected_runcase = Int(1)
     case = Instance(Case)
+    case_filename = File()
     mass = Instance(Mass)
     cwd = Directory
     #runoutput = Instance(RunOutput)
@@ -451,7 +452,7 @@ class AVL(HasTraits):
         self.avl.sendline(str(self.selected_case))
         AVL.goto_state(self.avl)
     
-    def __init__(self, path='', cwd='', logfile='/opt/idearesearch/avllog'):
+    def __init__(self, path='', cwd='', logfile='avl.log'):
         '''
         Constructor
         path is the directory where avl binary is found
@@ -505,6 +506,7 @@ class AVL(HasTraits):
     
     def load_case_from_file(self, filename):
         self.avl.sendline('load %s' % filename)
+        self.case_filename = filename
         if os.path.isabs(filename):
             f = open(filename)
         else:

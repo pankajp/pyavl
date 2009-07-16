@@ -53,13 +53,6 @@ class AVLPlugin(Plugin):
         
         return [avl_service_offer]#, avl_runoutput_service_offer]
     
-    # deprecated
-    def create_default_runoutput(self, *args, **kwargs):
-        from pyavl.runutils import RunCase, RunConfig
-        avl = self.application.get_service('pyavl.avl.AVL')
-        rc = RunConfig(runcase=RunCase.get_case_from_avl(avl.avl))
-        runoutput = rc.run(progressbar=False)
-        return runoutput
     
 #### EOF ######################################################################
 

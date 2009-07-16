@@ -37,14 +37,14 @@ class OutputPlotViewer(HasTraits):
         var_names = self.runoutput.variable_names
         self.plot.x_axis.title = self.var_x
         self.plot.y_axis.title = self.var_y
-        #try:
-        self.plotdata.set_data('x', self.runoutput.variable_values[:, var_names.index(self.var_x)])
-        self.plotdata.set_data('y', self.runoutput.variable_values[:, var_names.index(self.var_y)])
-        #except ValueError, e:
-        #    pass
+        try:
+            self.plotdata.set_data('x', self.runoutput.variable_values[:, var_names.index(self.var_x)])
+            self.plotdata.set_data('y', self.runoutput.variable_values[:, var_names.index(self.var_y)])
+        except ValueError, e:
+            pass
         self.replot()
     
-    #@on_trait_change('data')
+    #@on_trait_change('runoutput.eigenmatrix')
     def replot(self):
         self.plot.title = 'Output'
         self.plot.request_redraw()

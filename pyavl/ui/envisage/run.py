@@ -17,9 +17,13 @@ from enthought.envisage.ui.workbench.workbench_plugin import WorkbenchPlugin
 
 from enthought.envisage.developer.ui.developer_ui_plugin import DeveloperUIPlugin
 
-from enthought.plugins.ipython_shell.ipython_shell_plugin import IPythonShellPlugin
-PythonShellPlugin = IPythonShellPlugin
-#from enthought.plugins.python_shell.python_shell_plugin import PythonShellPlugin
+use_ipython_plugin = True
+
+if use_ipython_plugin:
+    from enthought.plugins.ipython_shell.ipython_shell_plugin import IPythonShellPlugin
+    PythonShellPlugin = IPythonShellPlugin
+else:
+    from enthought.plugins.python_shell.python_shell_plugin import PythonShellPlugin
 
 from enthought.plugins.text_editor.text_editor_plugin import TextEditorPlugin
 from enthought.logger.plugin.logger_plugin import LoggerPlugin

@@ -205,7 +205,7 @@ class RunConfig(HasTraits):
         outs, modes, matrices = [], [], []
         # now run the case and get output while changing the vars each time
         if progressbar:
-            progress = ProgressDialog(title="progress", message="calculating...", max=self.runcase_config.x.shape[0] - 1, show_time=True, can_cancel=True)
+            progress = ProgressDialog(title="progress", message="calculating...", max=self.runcase_config.x.shape[0], show_time=True, can_cancel=True)
             try:
                 progress.open()
             except Exception, e:
@@ -240,7 +240,7 @@ class RunConfig(HasTraits):
                 logger.warning(e)
             if progressbar:
                 try:
-                    cont, skip = progress.update(i)
+                    cont, skip = progress.update(i+1)
                     if not cont or skip:
                         break
                     pass

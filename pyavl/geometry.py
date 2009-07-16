@@ -374,7 +374,7 @@ class Surface(HasTraits):
         file.write(self.name)
         file.write('\n')
         file.write('# Nchord    Cspace    [ Nspan    Sspace ]\n')
-        file.write('%d    %f' % tuple(self.cvortices))
+        file.write('%s    %s' % tuple(self.cvortices))
         if self.svortices[0] != 0: file.write('    %d    %f' % (self.svortices[0], self.svortices[1]))
         file.write('\n')
         if numpy.isfinite(self.yduplicate):

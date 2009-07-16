@@ -16,15 +16,16 @@ class ParafoilWizard(HasTraits):
     span = Float(7.5)
     chord = Float(3.75)
     number_of_cells = Int(9)
-    dihedral_angle = Float(40)
+    anhedral_angle = Float(40)
     sectiondata = Instance(SectionData, SectionAFILEData(filename='/opt/idearesearch/pyavl/testcase/avl_case/clarky.dat'))
     def get_surface(self):
         num_sections = (self.number_of_cells+1) // 2
-        dihedral_angle_r = self.dihedral_angle*numpy.pi/180
+        anhedral_angle_r = self.anhedral_angle*numpy.pi/180
+        r = self.span/2.0/numpy.sin(anhedral_angle_r)
         sections = []
-        y = numpy.linspace((self.number_of_cells%2)/2.0, self.number_of_cells/2.0, num_sections)/self.number_of_cells
-        for i,theta in enumerate(dihedral_angle_r*y):
-            le = numpy.array([0, self.span*numpy.sin(theta)/2/numpy.sin(dihedral_angle_r), -self.span*(1-numpy.cos(theta))/2.0/numpy.sin(dihedral_angle_r)])
+        y = numpy.linspace(self.number_of_cells%2, self.number_of_cells, num_sections)/self.number_of_cells
+        for i,theta in enumerate(anhedral_angle_r*y):
+            le = numpy.array([0, r*numpy.sin(theta), r*(numpy.cos(theta)-1)])
             sections.append(Section(leading_edge=le, chord=self.chord, type=self.sectiondata.type, data=self.sectiondata))
         surface = Surface(name='Parafoil', yduplicate=0, sections=sections)
         return surface
