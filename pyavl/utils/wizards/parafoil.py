@@ -8,6 +8,7 @@ from pyavl.geometry import Section, SectionAFILEData, Geometry, Surface, Section
 from pyavl.ui.geometry_viewer import GeometryViewer
 
 import numpy
+import os
 
 from enthought.traits.api import Float, Range, Instance, Int, HasTraits
 from enthought.traits.ui.api import View, Item
@@ -27,10 +28,14 @@ class ParafoilWizard(HasTraits):
         r = self.span / 2.0 / numpy.sin(anhedral_angle_r)
         sections = []
         y = numpy.linspace(self.number_of_cells % 2, self.number_of_cells, num_sections) / self.number_of_cells
+        sectiondata = SectionAIRFOILData.get_clipped_section_data(self.sectiondata, self.inlet_height, self.cut_angle)
+        filename = 'parafoil.dat'
+        filename = os.path.abspath(filename)
+        sectiondata.write_airfoil_file(filename, 'parafoil')
         for i, theta in enumerate(anhedral_angle_r * y):
             le = numpy.array([0, r * numpy.sin(theta), r * (numpy.cos(theta) - 1)])
-            sectiondata = SectionAIRFOILData.get_clipped_section_data(self.sectiondata, self.inlet_height, self.cut_angle)
-            sections.append(Section(leading_edge=le, chord=self.chord, type=sectiondata.type, data=sectiondata))
+            sectionafile = SectionAFILEData(filename=filename)
+            sections.append(Section(leading_edge=le, chord=self.chord, type=sectionafile.type, data=sectionafile))
         surface = Surface(name='Parafoil', yduplicate=0, sections=sections)
         return surface
     traits_view = View('span','chord','number_of_cells','anhedral_angle',

@@ -61,7 +61,14 @@ class DesignParameter(HasTraits):
 class SectionData(HasTraits):
     type = 'flat plate'
     def write_to_file(self, file):
-        pass
+        pass        
+    
+    def write_airfoil_file(self, filename, name='airfoil'):
+        file = open(filename,'w')
+        data_points = self.get_data_points()
+        for row in data_points:
+            file.write('%f    %f\n' %(row[0],row[1]))
+        file.close()
     
     data_points = Array(numpy.float, ((2, None), 2), numpy.array([[0.0, 0.0],
                                                                   [1.0, 0.0]]))
@@ -261,7 +268,8 @@ class Section(HasTraits):
             svortices = [0, 1.0]
         lineno += 2
         section = Section(leading_edge=leading_edge, chord=chord, angle=angle, svortices=svortices)
-        if lineno >= len(lines):
+        numlines = len(lines)
+        if lineno >= numlines:
             section.data = SectionData()
         elif lines[lineno].startswith('NACA'):
             number = int(lines[lineno + 1])
@@ -270,10 +278,10 @@ class Section(HasTraits):
             lineno += 2
         elif lines[lineno].startswith('AIRF'):
             x_range = lines[lineno + 1].split()
-            if len(range) == 3:
+            if len(x_range) == 3:
                 x_range = [float(val) for val in range[1:]]
             else:
-                x_range = None
+                x_range = [0.0,1.0]
             lineno += 1
             dataline = []
             while lineno < numlines:
@@ -299,7 +307,6 @@ class Section(HasTraits):
         else:
             section.data = SectionData()
         
-        numlines = len(lines)
         while lineno < numlines:
             cmd = lines[lineno]
             if cmd.startswith('CLAF'):
