@@ -6,7 +6,7 @@ Created on Jul 11, 2009
 The avl output viewer plugin
 '''
 
-#from pyavl.avl import AVL
+from pyavl.avl import AVL
 from pyavl.geometry import Section
 from pyavl.ui.output_viewer import OutputPlotViewer, OutputVariablesViewer, OutputSystemViewer
 
@@ -71,15 +71,18 @@ class AVLOutputPlugin(Plugin):
         
         return [self._create_output_plot_view, self._create_output_variables_view, self._create_output_system_view]#, self._create_plot2d_view]
     
-    avl = Any()
+    avl = Instance(AVL)
     def _avl_default(self):
-        return self.application.get_service('pyavl.avl.AVL')
+        avl = self.application.get_service('pyavl.avl.AVL')
+        return avl
     
     runoutput = Any()
     def _runoutput_default(self):
-        return self.application.get_service('pyavl.avl.AVL').run_cases[0].runoutput
+        runoutput = self.application.get_service('pyavl.avl.AVL').run_cases[0].runoutput
+        self.avl.on_trait_change(self.get_runoutput, 'reload_output')
+        return runoutput
     
-    @on_trait_change('avl.run_cases')
+    @on_trait_change('avl.run_cases.runoutput')
     def get_runoutput(self):
         print 'in AVLOutputPlugin.get_runoutput'
         self.runoutput = self.avl.run_cases[0].runoutput

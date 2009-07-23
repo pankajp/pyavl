@@ -51,6 +51,7 @@ class AVLHandler(Handler):
         if filename:
             avl.load_case_from_file(filename)
             logger.info('loading case from file : %s' %str(filename))
+        avl.reload_case = True
     
     # NOTE: it also reloads the case into avl
     def save_case(self, info):

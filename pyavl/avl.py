@@ -443,6 +443,7 @@ class AVL(HasTraits):
     case_filename = File()
     mass = Instance(Mass)
     cwd = Directory
+    reload_output = Action
     #runoutput = Instance(RunOutput)
     
     traits_view = View(Item('selected_runcase'))
@@ -515,6 +516,13 @@ class AVL(HasTraits):
         f.close()
         AVL.goto_state(self.avl)
         self.populate_runcases()
+        
+    def _run_cases_changed(self):
+        print 'run_cases changed'
+#        self.reload_output = True
+    
+    def _case_changed(self):
+        print 'case changed'
     
     def load_mass_from_file(self, filename):
         self.mass = Mass.mass_from_file(filename)

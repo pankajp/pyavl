@@ -38,6 +38,7 @@ class Case(HasTraits):
     CD_p = Float
     geometry = Instance(Geometry)
     cwd = Directory
+    case_filename = File('')
     
     traits_view = View(Item('name'),
                        Item('mach_no'),
