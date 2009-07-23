@@ -142,7 +142,8 @@ class RunConfig(HasTraits):
                 self.runcase_config = TrimCaseConfig(runcase=self.runcase, trimcase=trimcase)
     
     run_button = Button(label='Run Calculation')
-    view = View(Item('runtype'),
+    view = View(Item(label='Note: Case *must* be saved before running'),
+                Item('runtype'),
                 Group(Item('runcase_config', editor=InstanceEditor(), style='custom', show_label=False)),
                 #HGroup(Item('calc_eigenmodes')),
                        #spring, Item('run_button', show_label=False)),

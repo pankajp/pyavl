@@ -51,20 +51,20 @@ class BodyViewer(HasTraits):
         #yl = dyl[il] - (dyl[il] - dyl[il - 1]) * (dxl[il]-x) / (dxl[il]-dx[il-1])
         yu = numpy.interp(x, dxu, dyu)
         yl = numpy.interp(x, dxl, dyl)
-        return numpy.array([x,abs(yu-yl)]).T
+        return numpy.array([x, abs(yu - yl)]).T
     # superior will take care of yduplicate
     @cached_property
     def _get_bodydata(self):
         ret = numpy.empty((self.num_pts, 4))
         # y,z coords are 0
-        ret[:,1:3] = 0.0
+        ret[:, 1:3] = 0.0
         # scale : radii (by sqrt(y*z)) and x
         # set the radii
-        ret[:,3] = self.diameters[:,1]/2 * (self.body.scale[1]*self.body.scale[2])**0.5
+        ret[:, 3] = self.diameters[:, 1] / 2 * (self.body.scale[1] * self.body.scale[2]) ** 0.5
         # set the radii centers
-        ret[:,0] = self.diameters[:,0] * self.body.scale[0]
+        ret[:, 0] = self.diameters[:, 0] * self.body.scale[0]
         # translate
-        ret[:,:3] += self.body.translate
+        ret[:, :3] += self.body.translate
         return ret
     
 class SurfaceViewer(HasTraits):
@@ -75,6 +75,7 @@ class SurfaceViewer(HasTraits):
     # min 2 points in a section
     # List : section , point , xyz
     sectiondata = Property(List(Array(dtype=numpy.float, shape=((2, None), 3)), depends_on='surface'))
+    #section_ranges = Property(List(Array(dtype=numpy.float, shape=(2,), depends_on='surface.sections')
     # array : section , num_pts, xyz
     surfacedata = Property(Array(dtype=numpy.float, shape=(None, None, 3)), depends_on='sectiondata')
     @cached_property
@@ -211,7 +212,7 @@ class GeometryViewer(HasTraits):
         for surface in self.surfaces:
             section_pts = surface.sectiondata
             for i, section_pt in enumerate(section_pts):
-                if len(section_pt)==2:
+                if len(section_pt) == 2:
                     #tube_radius = 0.02 * abs(section_pt[-1,0]-section_pt[0,0])
                     tube_radius = None
                 else:
@@ -219,17 +220,17 @@ class GeometryViewer(HasTraits):
                 self.plots.append(self.scene.mlab.plot3d(section_pt[:, 0], section_pt[:, 1], section_pt[:, 2], tube_radius=tube_radius))
             self.plots.append(self.scene.mlab.mesh(surface.surfacedata[:, :, 0], surface.surfacedata[:, :, 1], surface.surfacedata[:, :, 2]))
         for body in self.bodies:
-            width = (body.data_props[2]-body.data_props[1])/body.num_pts * 0.15
+            width = (body.data_props[2] - body.data_props[1]) / body.num_pts * 0.15
             for data in body.bodydata:
-                c = numpy.empty((2,3))
+                c = numpy.empty((2, 3))
                 c[:] = data[:3]
-                c[0,0] -= width/2
-                c[1,0] += width/2
+                c[0, 0] -= width / 2
+                c[1, 0] += width / 2
                 #print c, width
-                self.plots.append(self.scene.mlab.plot3d(c[:,0], c[:, 1], c[:, 2], tube_radius=data[3], tube_sides=24))
+                self.plots.append(self.scene.mlab.plot3d(c[:, 0], c[:, 1], c[:, 2], tube_radius=data[3], tube_sides=24))
                 if numpy.isfinite(body.body.yduplicate):
-                    c[:,1] = body.body.yduplicate - c[:,1]
-                    self.plots.append(self.scene.mlab.plot3d(c[:,0], c[:, 1], c[:, 2], tube_radius=data[3], tube_sides=24))
+                    c[:, 1] = body.body.yduplicate - c[:, 1]
+                    self.plots.append(self.scene.mlab.plot3d(c[:, 0], c[:, 1], c[:, 2], tube_radius=data[3], tube_sides=24))
         #print 'numplots = ', len(self.plots)
     
     #@on_trait_change('geometry')
@@ -254,7 +255,7 @@ class GeometryViewer(HasTraits):
 if __name__ == '__main__':
     import sys
     from pyavl.case import Case
-    if len(sys.argv)>1:
+    if len(sys.argv) > 1:
         file = open(sys.argv[1])
     else:
         file = open('/opt/idearesearch/pyavl/testcase/avl_case/testflatplate.avl')

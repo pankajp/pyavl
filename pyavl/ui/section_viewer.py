@@ -5,7 +5,7 @@ Created on Jul 2, 2009
 '''
 
 import numpy
-from pyavl.geometry import Section
+from pyavl.geometry import Section, SectionAIRFOILData
 from pyavl.utils.traitstools import CustomSaveTool
 from itertools import chain
 
@@ -24,7 +24,7 @@ from enthought.chaco.tools.api import PanTool, ZoomTool, DragZoom, TraitsTool, S
 class SectionViewer(HasTraits):
     section = Instance(Section)
     plot = Instance(Plot)
-    plotdata = Instance(ArrayPlotData, kw={'x':numpy.array([]),'y':numpy.array([])})
+    plotdata = Instance(ArrayPlotData, kw={'x':numpy.array([]), 'y':numpy.array([])})
     #pointsx = Array(numpy.float, value=numpy.array([]))
     #pointsy = Array(numpy.float, value=numpy.array([]))
     data = Property(Array, depends_on='section.data.data_points')
@@ -34,11 +34,11 @@ class SectionViewer(HasTraits):
             ret = self.section.data.data_points
             #self.pointsx = ret[:, 0]
             #self.pointsy = ret[:, 1]
-            self.plotdata.set_data('x', ret[:,0])
-            self.plotdata.set_data('y', ret[:,1])
+            self.plotdata.set_data('x', ret[:, 0])
+            self.plotdata.set_data('y', ret[:, 1])
             return ret
         except AttributeError:
-            return numpy.Array([[],[]])
+            return numpy.Array([[], []])
     
     @on_trait_change('data')
     def replot(self):
@@ -80,8 +80,8 @@ class SectionViewer(HasTraits):
             
             renderer.index_mapper.range.low = 0
             renderer.index_mapper.range.high = 1
-            renderer.value_mapper.range.low = -3/8.
-            renderer.value_mapper.range.high = 3/8.
+            renderer.value_mapper.range.low = - 3 / 8.
+            renderer.value_mapper.range.high = 3 / 8.
         self.plot = plot
         
     
@@ -94,18 +94,29 @@ class SectionViewer(HasTraits):
 
 if __name__ == '__main__':
     from pyavl.case import Case
-    file = open('/opt/idearesearch/avl/runs/bd.avl')
+    file = open('/opt/idearesearch/avl/runs/ow.avl')
     case = Case.case_from_input_file(file)
     #g = GeometryViewer(geometry=case.geometry)
     #g.configure_traits()
     #print g.surfaces[2].sectiondata
-    sections = case.geometry.surfaces[0].sections
-    section = None
-    for s in sections:
-        if s.type == 'airfoil data file':
-            section = s
-            break
+    sections = case.geometry.surfaces[2].sections
+    section = sections[0]
+    section.type = 'NACA'
+    section.data.number = 4412
+    #for s in sections:
+    #    if s.type == 'airfoil data file':
+    #        section = s
+    #        break
     #print section, [s.data for s in sections]
-    sv = SectionViewer(section=sections[0])
+    sv = SectionViewer(section=section)
     sv.configure_traits()
-
+    
+    #section = sections[0]
+    sectiondata = SectionAIRFOILData.get_clipped_section_data(section.data, 0.1, 135)
+    section2 = Section(type=sectiondata.type)
+    section2.data = sectiondata
+    #section.type = sectiondata.type
+    #section.data = sectiondata
+    sv = SectionViewer(section=section2)
+    sv.configure_traits()
+    

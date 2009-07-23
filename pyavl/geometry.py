@@ -5,13 +5,16 @@ Created on Jun 9, 2009
 '''
 import os
 import numpy
+
+from pyavl.utils.naca4_plotter import get_NACA4_data
+from pyavl.utils.numerical import false_position_method
+
 from enthought.traits.api import HasTraits, List, Str, Float, Range, Int, Dict, Button, \
         File, Trait, Instance, Enum, Array, cached_property, Property, String, Directory, \
         on_trait_change
 from enthought.traits.ui.api import View, Item, Group, ListEditor, ArrayEditor, ListStrEditor, \
     HGroup
 from enthought.traits.ui.value_tree import TraitsNode
-from pyavl.utils.naca4_plotter import get_NACA4_data
 
 def is_sequence(obj):
      try:
@@ -73,7 +76,7 @@ class SectionAFILEData(SectionData):
     x_range = List(Float, [0.0, 1.0], 2, 2)
     cwd = Directory('')
     data_points = Property(Array(numpy.float, ((2, None), 2), numpy.array([[0., 0.], [1., 0.]])), depends_on='filename')
-    traits_view = View(['filename','cwd','x_range'])
+    traits_view = View(['filename', 'cwd', 'x_range'])
     @cached_property
     def _get_data_points(self):
         try:
@@ -93,16 +96,84 @@ class SectionAIRFOILData(SectionData):
     type = 'airfoil data'
     data_points = Array(numpy.float, ((2, None), 2), numpy.array([[0., 0.], [1., 0.]]))
     x_range = List(Float, [0.0, 1.0], 2, 2)
-    traits_view = View(['data_points','x_range'])
+    traits_view = View(['data_points', 'x_range'])
     def write_to_file(self, file):
         file.write('AIRFOIL')
         if self.x_range != [0.0, 1.0]: file.write('    %f    %f' % self.x_range)
         file.write('\n')
-        for point in self.data: file.write('%f    %f\n' % point)
+        for point in self.data_points: file.write('%f    %f\n' %(point[0],point[1]))
         file.write('\n')
     
     def get_data_points(self):
         return self.data_points
+    
+    @classmethod
+    def get_clipped_section(cls, section, inlet_height, angle):
+        sectiondata = cls.get_clipped_section_data(section.data, inlet_height, angle)
+        ret = Section(type=sectiondata.type)
+        ret.chord = section.chord
+        ret.angle = section.angle
+        ret.svortices = section.svortices
+        ret.claf = section.claf
+        ret.cd_cl = section.cd_cl
+        ret.controls = section.controls
+        ret.design_params = section.design_params
+        ret.cwd = section.cwd
+        ret.data = sectiondata
+        ret.leading_egde = section.leading_egde
+        return ret
+    
+    @classmethod
+    def get_clipped_section_data(cls, sectiondata, inlet_height, angle):
+        '''Function to get a SectionAIRFOILData instance from a SectionData as 
+        required for a parafoil by clipping the front portion as specified by
+        the inlet height and angle of cut
+        '''
+        dx = sectiondata.data_points[:, 0]
+        xmin, xmax = numpy.min(dx), numpy.max(dx)
+        xchange = numpy.argmax(dx) if dx[1] > dx[0] else numpy.argmin(dx)
+        x = numpy.unique(dx)
+        
+        # datax, datay
+        dxu, dyu = sectiondata.data_points[:xchange+1, 0], sectiondata.data_points[:xchange+1, 1]
+        a = numpy.argsort(dxu)
+        dxu, dyu = dxu[a], dyu[a]
+        dxl, dyl = sectiondata.data_points[xchange:, 0], sectiondata.data_points[xchange:, 1]
+        a = numpy.argsort(dxl)
+        dxl, dyl = dxl[a], dyl[a]
+        
+        angle_r = angle * numpy.pi / 180
+        #def err_angle
+        err_angle = lambda x,x1,y1: angle_r - numpy.arctan2(y1 - numpy.interp(x, dxl, dyl), x1 - x)
+        get_err_angle = lambda x1,y1: lambda x: err_angle(x,x1,y1)
+        def get_inlet_height(x, angle):
+            x1 = x
+            y1 = numpy.interp(x1, dxu, dxu)
+            x2 = false_position_method(get_err_angle(x1,y1), x1, x1 + 0.01, angle_r / 100, max_iter=100)
+            y2 = numpy.interp(x, dxl, dyl)
+            return y1 - y2
+        
+        err_height = lambda x: get_inlet_height(x, angle) - inlet_height
+        x1 = x_inlet = false_position_method(err_height, 0.1, 0.11, inlet_height / 1000, max_iter=100)[0]
+        x2_inlet = false_position_method(get_err_angle(x1,numpy.interp(x1, dxu, dxu)), x1, x1 + 0.01, angle_r / 100, max_iter=100)[0]
+        dxu_new = dxu[dxu>x_inlet]
+        dxu_new = numpy.concatenate(([x_inlet],dxu_new))
+        dyu_new = numpy.interp(dxu_new, dxu, dyu)
+        dxl_new = dxl[dxl>x2_inlet]
+        dxl_new = numpy.concatenate(([x2_inlet],dxl_new))
+        dyl_new = numpy.interp(dxl_new, dxl, dyl)
+        dx_new = numpy.concatenate((dxl_new[::-1],dxu_new))
+        dy_new = numpy.concatenate((dyl_new[::-1],dyu_new))
+        
+        # now translate the data to get x_le = 0.0
+        dx_new = dx_new-x_inlet
+        # now scale to get initial chord to compensate for the cut
+        dx_new = dx_new/(1-x_inlet)
+        dy_new = dy_new/(1-x_inlet)
+        data_points = numpy.array([dx_new,dy_new]).T
+        print data_points.shape
+        ret = SectionAIRFOILData(data_points=data_points)
+        return ret
     
 class SectionNACAData(SectionData):
     type = 'NACA'
@@ -126,7 +197,7 @@ class Section(HasTraits):
     leading_edge = Array(numpy.float, (3,))
     chord = Float(1)
     angle = Float
-    svortices = List(value=[0, 1.0], minlen=2, maxlen=2)
+    svortices = List(value=[10, 1.0], minlen=2, maxlen=2)
     claf = Float(1.0)
     cd_cl = Array(numpy.float, (3, 2))
     controls = List(Control, [])
@@ -165,7 +236,7 @@ class Section(HasTraits):
         file.write('#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]\n')
         file.write('%f    %f    %f' % tuple(self.leading_edge))
         file.write('    %f    %f' % (self.chord, self.angle))
-        if self.svortices[0] != 0: file.write('    %d    %f' % tuple(self.svortices))
+        file.write('    %d    %f' % tuple(self.svortices))
         file.write('\n')
         self.data.write_to_file(file)
         if numpy.any(numpy.isnan(self.cd_cl)):
@@ -361,7 +432,7 @@ class Surface(HasTraits):
                        Item('scale', editor=ArrayEditor()),
                        Item('translate', editor=ArrayEditor()),
                        Item('angle'),
-                       HGroup(Item('add_section'),Item('delete_surface'), show_labels=False),
+                       HGroup(Item('add_section'), Item('delete_surface'), show_labels=False),
                        )
     
     @on_trait_change('sections.delete_section')
@@ -435,11 +506,11 @@ class Geometry(TraitsNode):
     add_body = Button()
     add_parafoil = Button()
     refresh_geometry_view = Button()
-    traits_view = View(HGroup(Item('add_surface'),Item('add_parafoil'),Item('add_body'),Item('refresh_geometry_view'), show_labels=False),
-                       Item('controls', editor=ListStrEditor(editable=False,operations=[]), style='readonly')
+    traits_view = View(HGroup(Item('add_surface'), Item('add_parafoil'), Item('add_body'), Item('refresh_geometry_view'), show_labels=False),
+                       Item('controls', editor=ListStrEditor(editable=False, operations=[]), style='readonly')
                        )
     def _add_surface_fired(self):
-        surface = Surface(sections=[Section(), Section(leading_edge=numpy.array([0,1,0]), yduplicate=0)])
+        surface = Surface(sections=[Section(), Section(leading_edge=numpy.array([0, 1, 0]), yduplicate=0)])
         self.surfaces.append(surface)
         self.refresh_geometry_view = True
     
