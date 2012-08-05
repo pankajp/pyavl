@@ -1,0 +1,7 @@
+# file types to ignore
+*.pyc
+*.so
+*.o
+*.a
+*~
+
