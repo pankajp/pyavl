@@ -453,15 +453,17 @@ class AVL(HasTraits):
         self.avl.sendline(str(self.selected_case))
         AVL.goto_state(self.avl)
     
-    def __init__(self, path='', cwd='', logfile='avl.log'):
+    def __init__(self, path='', cwd='', logfile='avl.log',**kwargs):
         '''
         Constructor
         path is the directory where avl binary is found
         cwd is the working dir, where all the case related files are expected to be found (eg airfoil files)
         logfile is where all output is to be logged
         '''
+        super(AVL, self).__init__(**kwargs)
         self.avl = pexpect.spawn(os.path.join(path, 'avl'), logfile=open(logfile, 'w'), cwd=cwd)
         self.avl.timeout = 10
+        self.avl.delaybeforesend = 0
         self.cwd = cwd
         self.disable_plotting()
         

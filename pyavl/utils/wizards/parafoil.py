@@ -32,6 +32,10 @@ class ParafoilWizard(HasTraits):
         filename = 'parafoil.dat'
         filename = os.path.abspath(filename)
         sectiondata.write_airfoil_file(filename, 'parafoil')
+        if self.number_of_cells%2==1:
+            le = numpy.zeros((3,))
+            sectionafile = SectionAFILEData(filename=filename)
+            sections.append(Section(leading_edge=le, chord=self.chord, type=sectionafile.type, data=sectionafile))
         for i, theta in enumerate(anhedral_angle_r * y):
             le = numpy.array([0, r * numpy.sin(theta), r * (numpy.cos(theta) - 1)])
             sectionafile = SectionAFILEData(filename=filename)
