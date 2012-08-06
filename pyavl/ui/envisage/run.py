@@ -17,7 +17,7 @@ from enthought.envisage.ui.workbench.workbench_plugin import WorkbenchPlugin
 
 from enthought.envisage.developer.ui.developer_ui_plugin import DeveloperUIPlugin
 
-use_ipython_plugin = True
+use_ipython_plugin = False
 
 if use_ipython_plugin:
     from enthought.plugins.ipython_shell.ipython_shell_plugin import IPythonShellPlugin
