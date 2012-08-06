@@ -163,8 +163,9 @@ class OutputSystemViewer(HasTraits):
 if __name__ == '__main__':
     from pyavl.avl import AVL
     from pyavl.runutils import RunConfig
-    avl = AVL(cwd='/opt/idearesearch/avl/runs/')
-    filename = '/opt/idearesearch/avl/runs/allegro.avl'
+    from pyavl import runs_dir, join
+    avl = AVL(cwd=runs_dir)
+    filename = join(runs_dir, 'allegro.avl')
     avl.load_case_from_file(filename)
     rv = RunConfig(runcase=RunCase.get_case_from_avl(avl.avl))
     print rv.configure_traits(kind='livemodal')

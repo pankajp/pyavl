@@ -94,7 +94,8 @@ class SectionViewer(HasTraits):
 
 if __name__ == '__main__':
     from pyavl.case import Case
-    file = open('/opt/idearesearch/avl/runs/ow.avl')
+    from pyavl import runs_dir, join
+    file = open(join(runs_dir, 'ow.avl'))
     case = Case.case_from_input_file(file)
     #g = GeometryViewer(geometry=case.geometry)
     #g.configure_traits()

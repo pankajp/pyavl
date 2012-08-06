@@ -4,6 +4,7 @@ Created on Jun 10, 2009
 @author: pankaj
 '''
 import unittest
+from pyavl import runs_dir, join
 from pyavl.case import Case, filter_lines
 from pyavl.geometry import Geometry, Surface
 
@@ -25,7 +26,7 @@ class Test(unittest.TestCase):
         self.case.write_input_file(file)
     
     def test_file_read(self):
-        file = open('/opt/idearesearch/avl/runs/'+self.test_avl_case+'.avl')
+        file = open(join(runs_dir, self.test_avl_case+'.avl'))
         case = Case.case_from_input_file(file)
         file.close()
         file = open('read_test_write.avl', 'w')
@@ -33,7 +34,7 @@ class Test(unittest.TestCase):
         file.close()
     
     def test_filter_lines(self):
-        file = open('/opt/idearesearch/avl/runs/'+self.test_avl_case+'.avl')
+        file = open(join(runs_dir, self.test_avl_case+'.avl'))
         lines = filter_lines(file.readlines())
         f2 = open('filter_lines.avl', 'w')
         f2.write('\n'.join(lines))

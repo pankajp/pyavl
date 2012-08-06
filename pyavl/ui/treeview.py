@@ -86,9 +86,10 @@ class AVLTreeView(HasTraits):
 
 
 if __name__ == '__main__':
-    file = open('/opt/idearesearch/avl/runs/vanilla.avl')
-    avl = AVL(cwd='/opt/idearesearch/avl/runs/')
-    avl.load_case_from_file('/opt/idearesearch/avl/runs/vanilla.avl')
+    from pyavl import runs_dir, join
+    file = open(join(runs_dir, 'vanilla.avl'))
+    avl = AVL(cwd=runs_dir)
+    avl.load_case_from_file(join(runs_dir, 'vanilla.avl'))
     tv = AVLTreeView(avl=avl)
     tv.configure_traits()
 

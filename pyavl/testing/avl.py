@@ -4,14 +4,14 @@ Created on Jun 8, 2009
 @author: pankaj
 '''
 import unittest
-from pyavl import avl
+from pyavl import avl, runs_dir, join
 
 class Test(unittest.TestCase):
 
 
     def setUp(self):
-        self.avl = avl.AVL(cwd='/opt/idearesearch/avl/runs/')
-        self.filename = '/opt/idearesearch/avl/runs/allegro.avl'
+        self.avl = avl.AVL(cwd=runs_dir)
+        self.filename = join(runs_dir, 'allegro.avl')
 
     def tearDown(self):
         self.avl.avl.close(True)

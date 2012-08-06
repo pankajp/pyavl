@@ -97,7 +97,8 @@ class Case(HasTraits):
         return case
     
 if __name__ == '__main__':
-    file = open('/opt/idearesearch/avl/runs/allegro.avl')
+    from pyavl import runs_dir
+    file = open(join(runs_dir, 'allegro.avl'))
     case = Case.case_from_input_file(file)
     #import sys
     case.configure_traits()

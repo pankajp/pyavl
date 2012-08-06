@@ -13,6 +13,7 @@ import numpy
 from pyavl.outpututils import EigenMatrix, EigenMode, RunOutput
 from pyavl.case import Case
 from pyavl.mass import Mass
+from pyavl import runs_dir, join
 
 from enthought.traits.api import HasTraits, List, Float, Dict, String, Int, Tuple, \
     Enum, cached_property, Python, Property, on_trait_change, Complex, Array, Instance, \
@@ -26,7 +27,6 @@ from enthought.traits.ui.menu import Action, ToolBar
 import logging
 # Logging.
 logger = logging.getLogger(__name__)
-
 
 class Parameter(HasTraits):
     name = String
@@ -530,8 +530,8 @@ class AVL(HasTraits):
         self.mass = Mass.mass_from_file(filename)
 
 def create_default_avl(*args, **kwargs):
-    avl = AVL(cwd='/opt/idearesearch/avl/runs/')
-    avl.load_case_from_file('/opt/idearesearch/avl/runs/vanilla.avl')
+    avl = AVL(cwd=runs_dir)
+    avl.load_case_from_file(join(runs_dir, 'vanilla.avl'))
     from pyavl.runutils import RunConfig
     rc = RunConfig(runcase=RunCase.get_case_from_avl(avl.avl))
     runoutput = rc.run(progressbar=False)

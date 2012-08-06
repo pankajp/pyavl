@@ -270,8 +270,9 @@ class RunConfig(HasTraits):
         return output
 
 if __name__ == '__main__':
-    avl = AVL(cwd='/opt/idearesearch/avl/runs/')
-    filename = '/opt/idearesearch/avl/runs/allegro.avl'
+    from pyavl import runs_dir
+    avl = AVL(cwd=runs_dir)
+    filename = join(runs_dir, 'allegro.avl')
     avl.load_case_from_file(filename)
     rv = RunConfig(runcase=RunCase.get_case_from_avl(avl.avl))
     print rv.configure_traits(kind='livemodal')

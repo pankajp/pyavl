@@ -10,6 +10,7 @@ The AVL plugin
 from enthought.envisage.api import Plugin, ServiceOffer
 from enthought.traits.api import List
 
+from pyavl import runs_dir, join
 
 class AVLPlugin(Plugin):
     """ The pyAVL plugin.
@@ -42,8 +43,8 @@ class AVLPlugin(Plugin):
         )
         
         def create_default_runoutput(*args, **kwargs):
-            avl = AVL(cwd='/opt/idearesearch/avl/runs/')
-            avl.load_case_from_file('/opt/idearesearch/avl/runs/vanilla.avl')
+            avl = AVL(cwd=runs_dir)
+            avl.load_case_from_file(join(runs_dir, 'vanilla.avl'))
             return avl
         
         #avl_runoutput_service_offer = ServiceOffer(

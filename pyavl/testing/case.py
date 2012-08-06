@@ -6,13 +6,14 @@ Created on Jun 10, 2009
 import unittest
 from pyavl.case import Case, filter_lines
 from pyavl.geometry import Geometry, Surface, Section, SectionAFILEData
+from pyavl import runs_dir, join
 
 class Test(unittest.TestCase):
 
     def setUp(self):
         geometry = Geometry()
         surface1 = Surface(name='surface 1', cvortices=[20,1.0], scale=[1.0,1.0,1.0], index=1, yduplicate=1.0)
-        section1data = SectionAFILEData(filename='/opt/idearesearch/avl/runs/ag42d.dat')
+        section1data = SectionAFILEData(filename=join(runs_dir, 'ag42d.dat'))
         section1 = Section(type='airfoil data file', data=section1data)
         geometry.surfaces.append(surface1)
         self.case = Case(name='testCase', mach_no=0.0, symmetry=[0,0,0.0], ref_area=9.0, ref_chord=0.9, ref_span=10.0, ref_cg=[0.5,0.0,0.0], geometry=geometry)
@@ -26,7 +27,7 @@ class Test(unittest.TestCase):
         self.case.write_input_file(file)
     
     def test_file_read(self):
-        file = open('/opt/idearesearch/avl/runs/'+self.test_avl_case+'.avl')
+        file = open(join(runs_dir, self.test_avl_case+'.avl'))
         case = Case.case_from_input_file(file)
         file.close()
         file = open('read_test_write.avl', 'w')
@@ -34,7 +35,7 @@ class Test(unittest.TestCase):
         file.close()
     
     def test_filter_lines(self):
-        file = open('/opt/idearesearch/avl/runs/'+self.test_avl_case+'.avl')
+        file = open(join(runs_dir, self.test_avl_case+'.avl'))
         lines = filter_lines(file.readlines())
         f2 = open('filter_lines.avl', 'w')
         f2.write('\n'.join(lines))
@@ -45,7 +46,7 @@ class Test(unittest.TestCase):
         file.close()
     
     def test_ui(self):
-        file = open('/opt/idearesearch/avl/runs/'+self.test_avl_case+'.avl')
+        file = open(join(runs_dir, self.test_avl_case+'.avl'))
         self.case = Case.case_from_input_file(file)
         import sys
         self.case.configure_traits()

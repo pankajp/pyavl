@@ -49,7 +49,8 @@ class ParafoilWizard(HasTraits):
 if __name__ == '__main__':
     import sys
     from pyavl.case import Case
-    file = open('/opt/idearesearch/avl/runs/bd.avl')
+    from pyavl import runs_dir, join
+    file = open(join(runs_dir, 'bd.avl'))
     case = Case.case_from_input_file(file)
     pw = ParafoilWizard()
     pw.configure_traits()
