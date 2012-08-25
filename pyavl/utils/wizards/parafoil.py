@@ -6,7 +6,7 @@ Created on Jul 13, 2009
 
 from pyavl.geometry import Section, SectionAFILEData, Geometry, Surface, SectionData, SectionAIRFOILData
 from pyavl.ui.geometry_viewer import GeometryViewer
-from pyavl import runs_dir
+from pyavl import runs_dir, src_dir
 
 import numpy
 import os
@@ -19,7 +19,7 @@ class ParafoilWizard(HasTraits):
     chord = Float(3.75)
     number_of_cells = Int(9)
     anhedral_angle = Float(40)
-    sectiondata = Instance(SectionData, SectionAFILEData(filename=os.path.join(runs_dir, 'clarky.dat')))
+    sectiondata = Instance(SectionData, SectionAFILEData(filename=os.path.join(src_dir, 'testcase', 'avl_case', 'clarky.dat')))
     #le_cut = Range(0.0,1.0,0.0, desc='leading edge cut position')
     inlet_height = Range(0.0, 0.5, 0.1, desc='the height of the inlet cut')
     cut_angle = Range(90., 180., 135, desc='leading edge cut angle with the positive x axis')
