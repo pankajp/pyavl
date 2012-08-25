@@ -1,0 +1,64 @@
+Parafoil
+#Mach
+ 0.0    
+#IYsym   IZsym   Zsym
+ 0       0       0.0
+#Sref    Cref    Bref
+ 28.125  3.75    7.5
+#Xref    Yref    Zref
+ 1.875   0.0     0.0
+SURFACE
+Parafoil
+# Nchord    Cspace    [ Nspan    Sspace ]
+8    1.000000
+YDUPLICATE
+0.0
+INDEX
+0
+SCALE
+1.0    1.0    1.0    
+TRANSLATE
+0.0    0.0    0.0    
+ANGLE
+1.0
+SECTION
+#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]
+0.000000    0.226214    -0.004387    3.750000    0.000000
+AFILE
+clarky.dat
+CLAF
+1.000000
+
+SECTION
+#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]
+0.000000    0.677282    -0.039447    3.750000    0.000000
+AFILE
+clarky.dat
+CLAF
+1.000000
+
+SECTION
+#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]
+0.000000    1.124276    -0.109356    3.750000    0.000000
+AFILE
+clarky.dat
+CLAF
+1.000000
+
+SECTION
+#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]
+0.000000    1.564509    -0.213693    3.750000    0.000000
+AFILE
+clarky.dat
+CLAF
+1.000000
+
+SECTION
+#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]
+0.000000    1.995333    -0.351831    3.750000    0.000000
+AFILE
+clarky.dat
+CLAF
+1.000000
+
+

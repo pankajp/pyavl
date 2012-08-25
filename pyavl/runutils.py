@@ -271,6 +271,7 @@ class RunConfig(HasTraits):
 
 if __name__ == '__main__':
     from pyavl import runs_dir
+    from os.path import join
     avl = AVL(cwd=runs_dir)
     filename = join(runs_dir, 'allegro.avl')
     avl.load_case_from_file(filename)

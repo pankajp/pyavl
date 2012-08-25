@@ -1,0 +1,136 @@
+Parafoil
+#Mach no
+0.000000
+#iYsym    iZsym    Zsym
+0    0    0.0
+#Sref    Cref    Bref
+9.000000    0.900000    10.000000
+#Xref    Yref    Zref
+0.500000    0.000000    0.000000
+
+######################################################################
+# SURFACES
+SURFACE
+H-stab
+# Nchord    Cspace    [ Nspan    Sspace ]
+6    1.0    6    1.000000
+YDUPLICATE
+0.0
+INDEX
+0
+SCALE
+1.0    1.0    1.0    
+TRANSLATE
+4.0    0.0    0.0    
+ANGLE
+0.0
+SECTION
+#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]
+0.000000    0.000000    0.000000    0.700000    0.000000
+CLAF
+1.000000
+CONTROL
+#Cname   Cgain  Xhinge  HingeVec      SgnDup
+elevator    1.000000    0.700000    0.000000 1.000000 0.000000    1.000000
+
+SECTION
+#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]
+0.140000    1.250000    0.000000    0.420000    0.000000
+CLAF
+1.000000
+CONTROL
+#Cname   Cgain  Xhinge  HingeVec      SgnDup
+elevator    1.000000    0.700000    0.000000 1.000000 0.000000    1.000000
+
+
+SURFACE
+V-stab
+# Nchord    Cspace    [ Nspan    Sspace ]
+6    1.0    5    1.000000
+INDEX
+0
+SCALE
+1.0    1.0    1.0    
+TRANSLATE
+4.0    0.0    0.0    
+ANGLE
+0.0
+SECTION
+#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]
+0.000000    0.000000    0.000000    0.700000    0.000000
+CLAF
+1.000000
+CONTROL
+#Cname   Cgain  Xhinge  HingeVec      SgnDup
+rudder    1.000000    0.500000    0.000000 0.000000 1.000000    1.000000
+
+SECTION
+#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]
+0.140000    0.000000    1.000000    0.420000    0.000000
+CLAF
+1.000000
+CONTROL
+#Cname   Cgain  Xhinge  HingeVec      SgnDup
+rudder    1.000000    0.500000    0.000000 0.000000 1.000000    1.000000
+
+
+SURFACE
+Parafoil
+# Nchord    Cspace    [ Nspan    Sspace ]
+8    1.0
+YDUPLICATE
+0.0
+INDEX
+0
+SCALE
+1.0    1.0    1.0    
+TRANSLATE
+0.0    0.0    0.0    
+ANGLE
+0.0
+SECTION
+#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]
+0.000000    0.226214    -0.004387    3.750000    0.000000
+AFILE
+clarky.dat
+CLAF
+1.000000
+
+SECTION
+#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]
+0.000000    0.677282    -0.039447    3.750000    0.000000
+AFILE
+clarky.dat
+CLAF
+1.000000
+
+SECTION
+#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]
+0.000000    1.124276    -0.109356    3.750000    0.000000
+AFILE
+clarky.dat
+CLAF
+1.000000
+
+SECTION
+#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]
+0.000000    1.564509    -0.213693    3.750000    0.000000
+AFILE
+clarky.dat
+CLAF
+1.000000
+
+SECTION
+#Xle   Yle   Zle   Chord  Ainc  [ Nspan Sspace ]
+0.000000    1.995333    -0.351831    3.750000    0.000000
+AFILE
+clarky.dat
+CLAF
+1.000000
+
+
+# END SURFACES
+
+# BODIES
+# END BODIES
+

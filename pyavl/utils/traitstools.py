@@ -42,7 +42,7 @@ class CustomSaveTool(SaveTool):
     # The file that the image is saved in.  The format will be deduced from
     # the extension.
     filenameview = Instance(FileName, FileName())
-    filename = DelegatesTo('filenameview') # File("/home/pankaj/Desktop/saved_plot.png")
+    filename = DelegatesTo('filenameview')
     
     #-------------------------------------------------------------------------
     # PDF format options
